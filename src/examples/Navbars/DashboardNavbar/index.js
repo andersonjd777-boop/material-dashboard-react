@@ -16,7 +16,7 @@ Coded by www.creative-tim.com
 import { useState, useEffect } from "react";
 
 // react-router components
-import { useLocation, Link } from "react-router-dom";
+import { useLocation, Link, useNavigate } from "react-router-dom";
 
 // prop-types is a library for typechecking of props.
 import PropTypes from "prop-types";
@@ -26,6 +26,7 @@ import AppBar from "@mui/material/AppBar";
 import Toolbar from "@mui/material/Toolbar";
 import IconButton from "@mui/material/IconButton";
 import Menu from "@mui/material/Menu";
+import MenuItem from "@mui/material/MenuItem";
 import Icon from "@mui/material/Icon";
 
 // Material Dashboard 2 React components
@@ -58,7 +59,9 @@ function DashboardNavbar({ absolute, light, isMini }) {
   const [controller, dispatch] = useMaterialUIController();
   const { miniSidenav, transparentNavbar, fixedNavbar, openConfigurator, darkMode } = controller;
   const [openMenu, setOpenMenu] = useState(false);
+  const [openAccountMenu, setOpenAccountMenu] = useState(false);
   const route = useLocation().pathname.split("/").slice(1);
+  const navigate = useNavigate();
 
   useEffect(() => {
     // Setting the navbar type
@@ -90,6 +93,14 @@ function DashboardNavbar({ absolute, light, isMini }) {
   const handleConfiguratorOpen = () => setOpenConfigurator(dispatch, !openConfigurator);
   const handleOpenMenu = (event) => setOpenMenu(event.currentTarget);
   const handleCloseMenu = () => setOpenMenu(false);
+  const handleOpenAccountMenu = (event) => setOpenAccountMenu(event.currentTarget);
+  const handleCloseAccountMenu = () => setOpenAccountMenu(false);
+
+  const handleLogout = () => {
+    localStorage.removeItem("dcg_admin_token");
+    localStorage.removeItem("dcg_admin_user");
+    navigate("/authentication/sign-in");
+  };
 
   // Render the notifications menu
   const renderMenu = () => (
@@ -107,6 +118,46 @@ function DashboardNavbar({ absolute, light, isMini }) {
       <NotificationItem icon={<Icon>email</Icon>} title="Check new messages" />
       <NotificationItem icon={<Icon>podcasts</Icon>} title="Manage Podcast sessions" />
       <NotificationItem icon={<Icon>shopping_cart</Icon>} title="Payment successfully completed" />
+    </Menu>
+  );
+
+  // Render the account menu with logout
+  const renderAccountMenu = () => (
+    <Menu
+      anchorEl={openAccountMenu}
+      anchorReference={null}
+      anchorOrigin={{
+        vertical: "bottom",
+        horizontal: "left",
+      }}
+      open={Boolean(openAccountMenu)}
+      onClose={handleCloseAccountMenu}
+      sx={{ mt: 2 }}
+    >
+      <MenuItem
+        onClick={() => {
+          handleCloseAccountMenu();
+          navigate("/profile");
+        }}
+      >
+        <Icon sx={{ mr: 1 }}>person</Icon> Profile
+      </MenuItem>
+      <MenuItem
+        onClick={() => {
+          handleCloseAccountMenu();
+          navigate("/billing");
+        }}
+      >
+        <Icon sx={{ mr: 1 }}>receipt</Icon> Billing
+      </MenuItem>
+      <MenuItem
+        onClick={() => {
+          handleCloseAccountMenu();
+          handleLogout();
+        }}
+      >
+        <Icon sx={{ mr: 1 }}>logout</Icon> Logout
+      </MenuItem>
     </Menu>
   );
 
@@ -139,11 +190,17 @@ function DashboardNavbar({ absolute, light, isMini }) {
               <MDInput label="Search here" />
             </MDBox>
             <MDBox color={light ? "white" : "inherit"}>
-              <Link to="/authentication/sign-in/basic">
-                <IconButton sx={navbarIconButton} size="small" disableRipple>
-                  <Icon sx={iconsStyle}>account_circle</Icon>
-                </IconButton>
-              </Link>
+              <IconButton
+                sx={navbarIconButton}
+                size="small"
+                disableRipple
+                aria-controls="account-menu"
+                aria-haspopup="true"
+                onClick={handleOpenAccountMenu}
+              >
+                <Icon sx={iconsStyle}>account_circle</Icon>
+              </IconButton>
+              {renderAccountMenu()}
               <IconButton
                 size="small"
                 disableRipple

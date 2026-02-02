@@ -1,69 +1,215 @@
 /**
-=========================================================
-* Material Dashboard 2 React - v2.2.0
-=========================================================
-
-* Product Page: https://www.creative-tim.com/product/material-dashboard-react
-* Copyright 2023 Creative Tim (https://www.creative-tim.com)
-
-Coded by www.creative-tim.com
-
- =========================================================
-
-* The above copyright notice and this permission notice shall be included in all copies or substantial portions of the Software.
-*/
-
-/** 
-  All of the routes for the Material Dashboard 2 React are added here,
-  You can add a new route, customize the routes and delete the routes here.
-
-  Once you add a new route on this file it will be visible automatically on
-  the Sidenav.
-
-  For adding a new route you can follow the existing routes in the routes array.
-  1. The `type` key with the `collapse` value is used for a route.
-  2. The `type` key with the `title` value is used for a title inside the Sidenav. 
-  3. The `type` key with the `divider` value is used for a divider between Sidenav items.
-  4. The `name` key is used for the name of the route on the Sidenav.
-  5. The `key` key is used for the key of the route (It will help you with the key prop inside a loop).
-  6. The `icon` key is used for the icon of the route on the Sidenav, you have to add a node.
-  7. The `collapse` key is used for making a collapsible item on the Sidenav that has other routes
-  inside (nested routes), you need to pass the nested routes inside an array as a value for the `collapse` key.
-  8. The `route` key is used to store the route location which is used for the react router.
-  9. The `href` key is used to store the external links location.
-  10. The `title` key is only for the item with the type of `title` and its used for the title text on the Sidenav.
-  10. The `component` key is used to store the component of its route.
-*/
+ * DCG Admin Dashboard - Routes (Reorganized)
+ * Navigation configuration for Direct Connect Global admin panel
+ * Categorized structure with collapsible sections
+ */
 
 // Material Dashboard 2 React layouts
 import Dashboard from "layouts/dashboard";
-import Tables from "layouts/tables";
+import Secrets from "layouts/secrets";
+import Projects from "layouts/projects";
+import System from "layouts/system";
+import Actions from "layouts/actions";
+import Assistant from "layouts/assistant";
+import Flagging from "layouts/flagging";
+import CallLogs from "layouts/calllogs";
+import CallIssues from "layouts/callissues";
+import VoiceMessages from "layouts/voicemessages";
+import Messages from "layouts/messages";
+import SharedDrive from "layouts/shareddrive";
+import EmailHub from "layouts/email";
 import Billing from "layouts/billing";
-import RTL from "layouts/rtl";
-import Notifications from "layouts/notifications";
 import Profile from "layouts/profile";
 import SignIn from "layouts/authentication/sign-in";
-import SignUp from "layouts/authentication/sign-up";
+import TaskManagement from "layouts/taskmanagement";
+import GanttTimeline from "layouts/gantt";
+import CRMDashboard from "layouts/crm";
+import AutoHealer from "layouts/autohealer";
+import AutoDeveloper from "layouts/autodeveloper";
+import ComplianceOfficer from "layouts/compliance";
+import AugmentControl from "layouts/augment";
+import GapChecker from "layouts/gapchecker";
+import AntiRegression from "layouts/antiregression";
+import WorkCalendar from "layouts/workCalendar";
+
+// AI Workforce Layouts
+import JenkinsTab from "layouts/ai-workforce/jenkins";
+import VigilTab from "layouts/ai-workforce/vigil";
+import LedgerTab from "layouts/ai-workforce/ledger";
+import BellTab from "layouts/ai-workforce/bell";
+import WardenTab from "layouts/ai-workforce/warden";
+import ScribeTab from "layouts/ai-workforce/scribe";
+import IrisTab from "layouts/ai-workforce/iris";
 
 // @mui icons
 import Icon from "@mui/material/Icon";
 
 const routes = [
+  // Main Dashboard - Always visible at top
   {
     type: "collapse",
-    name: "Dashboard",
+    name: "Overview",
     key: "dashboard",
     icon: <Icon fontSize="small">dashboard</Icon>,
     route: "/dashboard",
     component: <Dashboard />,
   },
+
+  // CATEGORY: AI Workforce
+  {
+    type: "title",
+    title: "AI Workforce",
+    key: "ai-workforce-title",
+  },
   {
     type: "collapse",
-    name: "Tables",
-    key: "tables",
-    icon: <Icon fontSize="small">table_view</Icon>,
-    route: "/tables",
-    component: <Tables />,
+    name: "Jenkins (DevOps)",
+    key: "jenkins",
+    icon: <Icon fontSize="small">dns</Icon>,
+    route: "/ai/jenkins",
+    component: <JenkinsTab />,
+  },
+  {
+    type: "collapse",
+    name: "Vigil (Security)",
+    key: "vigil",
+    icon: <Icon fontSize="small">security</Icon>,
+    route: "/ai/vigil",
+    component: <VigilTab />,
+  },
+  {
+    type: "collapse",
+    name: "Ledger (Finance)",
+    key: "ledger",
+    icon: <Icon fontSize="small">account_balance</Icon>,
+    route: "/ai/ledger",
+    component: <LedgerTab />,
+  },
+  {
+    type: "collapse",
+    name: "Bell (Telecom)",
+    key: "bell",
+    icon: <Icon fontSize="small">perm_phone_msg</Icon>,
+    route: "/ai/bell",
+    component: <BellTab />,
+  },
+  {
+    type: "collapse",
+    name: "Warden (Compliance)",
+    key: "warden",
+    icon: <Icon fontSize="small">policy</Icon>,
+    route: "/ai/warden",
+    component: <WardenTab />,
+  },
+  {
+    type: "collapse",
+    name: "Scribe (Knowledge)",
+    key: "scribe",
+    icon: <Icon fontSize="small">library_books</Icon>,
+    route: "/ai/scribe",
+    component: <ScribeTab />,
+  },
+  {
+    type: "collapse",
+    name: "Iris (Comms)",
+    key: "iris",
+    icon: <Icon fontSize="small">notifications</Icon>,
+    route: "/ai/iris",
+    component: <IrisTab />,
+  },
+
+  // CATEGORY: Automation Systems
+  {
+    type: "title",
+    title: "Automation Systems",
+    key: "automation-title",
+  },
+  {
+    type: "collapse",
+    name: "Augment Control",
+    key: "augment",
+    icon: <Icon fontSize="small">settings_suggest</Icon>,
+    route: "/augment",
+    component: <AugmentControl />,
+  },
+  {
+    type: "collapse",
+    name: "Auto-Healer",
+    key: "autohealer",
+    icon: <Icon fontSize="small">healing</Icon>,
+    route: "/autohealer",
+    component: <AutoHealer />,
+  },
+  {
+    type: "collapse",
+    name: "Auto-Developer",
+    key: "autodeveloper",
+    icon: <Icon fontSize="small">smart_toy</Icon>,
+    route: "/autodeveloper",
+    component: <AutoDeveloper />,
+  },
+  {
+    type: "collapse",
+    name: "Compliance Officer",
+    key: "compliance",
+    icon: <Icon fontSize="small">gavel</Icon>,
+    route: "/compliance",
+    component: <ComplianceOfficer />,
+  },
+  {
+    type: "collapse",
+    name: "Gap Checker",
+    key: "gap-checker",
+    icon: <Icon fontSize="small">find_in_page</Icon>,
+    route: "/gap-checker",
+    component: <GapChecker />,
+  },
+  {
+    type: "collapse",
+    name: "Anti-Regression",
+    key: "anti-regression",
+    icon: <Icon fontSize="small">security_update</Icon>,
+    route: "/anti-regression",
+    component: <AntiRegression />,
+  },
+
+  // CATEGORY: Business Operations
+  {
+    type: "title",
+    title: "Business Operations",
+    key: "business-title",
+  },
+  {
+    type: "collapse",
+    name: "Work Calendar",
+    key: "work-calendar",
+    icon: <Icon fontSize="small">calendar_today</Icon>, // Use calendar icon
+    route: "/work-calendar",
+    component: <WorkCalendar />,
+  },
+  {
+    type: "collapse",
+    name: "Task Management",
+    key: "tasks",
+    icon: <Icon fontSize="small">task_alt</Icon>,
+    route: "/tasks",
+    component: <TaskManagement />,
+  },
+  {
+    type: "collapse",
+    name: "Project Timeline",
+    key: "gantt",
+    icon: <Icon fontSize="small">timeline</Icon>,
+    route: "/gantt",
+    component: <GanttTimeline />,
+  },
+  {
+    type: "collapse",
+    name: "CRM",
+    key: "crm",
+    icon: <Icon fontSize="small">people</Icon>,
+    route: "/crm",
+    component: <CRMDashboard />,
   },
   {
     type: "collapse",
@@ -75,19 +221,120 @@ const routes = [
   },
   {
     type: "collapse",
-    name: "RTL",
-    key: "rtl",
-    icon: <Icon fontSize="small">format_textdirection_r_to_l</Icon>,
-    route: "/rtl",
-    component: <RTL />,
+    name: "Projects",
+    key: "projects",
+    icon: <Icon fontSize="small">assignment</Icon>,
+    route: "/projects",
+    component: <Projects />,
   },
   {
     type: "collapse",
-    name: "Notifications",
-    key: "notifications",
-    icon: <Icon fontSize="small">notifications</Icon>,
-    route: "/notifications",
-    component: <Notifications />,
+    name: "Quick Actions",
+    key: "actions",
+    icon: <Icon fontSize="small">bolt</Icon>,
+    route: "/actions",
+    component: <Actions />,
+  },
+
+  // CATEGORY: Communication & Content
+  {
+    type: "title",
+    title: "Communication & Content",
+    key: "communication-title",
+  },
+  {
+    type: "collapse",
+    name: "Call Logs",
+    key: "calllogs",
+    icon: <Icon fontSize="small">phone</Icon>,
+    route: "/calllogs",
+    component: <CallLogs />,
+  },
+  {
+    type: "collapse",
+    name: "Call Issues",
+    key: "callissues",
+    icon: <Icon fontSize="small">error_outline</Icon>,
+    route: "/callissues",
+    component: <CallIssues />,
+  },
+  {
+    type: "collapse",
+    name: "Messages",
+    key: "messages",
+    icon: <Icon fontSize="small">chat</Icon>,
+    route: "/messages",
+    component: <Messages />,
+  },
+  {
+    type: "collapse",
+    name: "Voice Messages",
+    key: "voicemessages",
+    icon: <Icon fontSize="small">voicemail</Icon>,
+    route: "/voicemessages",
+    component: <VoiceMessages />,
+  },
+  {
+    type: "collapse",
+    name: "Work Email Hub",
+    key: "email",
+    icon: <Icon fontSize="small">email</Icon>,
+    route: "/email",
+    component: <EmailHub />,
+  },
+  {
+    type: "collapse",
+    name: "Flagged Content",
+    key: "flagging",
+    icon: <Icon fontSize="small">flag</Icon>,
+    route: "/flagging",
+    component: <Flagging />,
+  },
+  {
+    type: "collapse",
+    name: "Shared Drive",
+    key: "shareddrive",
+    icon: <Icon fontSize="small">folder_shared</Icon>,
+    route: "/shareddrive",
+    component: <SharedDrive />,
+  },
+
+  // CATEGORY: Technical Monitoring
+  {
+    type: "title",
+    title: "Technical Monitoring",
+    key: "monitoring-title",
+  },
+  {
+    type: "collapse",
+    name: "System Health",
+    key: "system",
+    icon: <Icon fontSize="small">monitor_heart</Icon>,
+    route: "/system",
+    component: <System />,
+  },
+  {
+    type: "collapse",
+    name: "Jenkins Assistant",
+    key: "assistant",
+    icon: <Icon fontSize="small">psychology</Icon>,
+    route: "/assistant",
+    component: <Assistant />,
+  },
+
+  // CATEGORY: Configuration
+  {
+    type: "title",
+    title: "Configuration",
+    key: "configuration-title",
+  },
+  {
+    type: "collapse",
+    name: "Secrets Manager",
+    key: "secrets",
+    icon: <Icon fontSize="small">vpn_key</Icon>,
+    route: "/secrets",
+    component: <Secrets />,
   },
   {
     type: "collapse",
@@ -97,21 +344,15 @@ const routes = [
     route: "/profile",
     component: <Profile />,
   },
+
+  // Hidden routes (authentication, etc.)
   {
-    type: "collapse",
+    type: "hidden",
     name: "Sign In",
     key: "sign-in",
     icon: <Icon fontSize="small">login</Icon>,
     route: "/authentication/sign-in",
     component: <SignIn />,
-  },
-  {
-    type: "collapse",
-    name: "Sign Up",
-    key: "sign-up",
-    icon: <Icon fontSize="small">assignment</Icon>,
-    route: "/authentication/sign-up",
-    component: <SignUp />,
   },
 ];
 
