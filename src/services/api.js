@@ -497,6 +497,26 @@ class ApiService {
     return this.get("/checkout/plans", params);
   }
 
+  // ============================================
+  // WORK CALENDAR API METHODS
+  // ============================================
+
+  async getWorkCalendarDates() {
+    return this.get("/work-calendar/dates");
+  }
+
+  async getWorkCalendarDate(date) {
+    return this.get(`/work-calendar/date/${date}`);
+  }
+
+  async addWorkCalendarItem(itemData) {
+    return this.post("/work-calendar/item", itemData);
+  }
+
+  async triggerWorkCalendarSync() {
+    return this.post("/work-calendar/sync");
+  }
+
   async getGanttData() {
     return this.get("/timeline/gantt-data");
   }

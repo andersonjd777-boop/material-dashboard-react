@@ -31,6 +31,7 @@ import AugmentControl from "layouts/augment";
 import GapChecker from "layouts/gapchecker";
 import AntiRegression from "layouts/antiregression";
 import WorkCalendar from "layouts/workCalendar";
+import CompanyCalendar from "layouts/companycalendar";
 
 // AI Workforce Layouts
 import JenkinsTab from "layouts/ai-workforce/jenkins";
@@ -186,6 +187,14 @@ const routes = [
     icon: <Icon fontSize="small">calendar_today</Icon>, // Use calendar icon
     route: "/work-calendar",
     component: <WorkCalendar />,
+  },
+  {
+    type: "collapse",
+    name: "Company Calendar",
+    key: "company-calendar",
+    icon: <Icon fontSize="small">event_note</Icon>,
+    route: "/company-calendar",
+    component: <CompanyCalendar />,
   },
   {
     type: "collapse",
