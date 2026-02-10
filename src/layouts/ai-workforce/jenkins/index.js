@@ -20,7 +20,7 @@ function JenkinsTab() {
             Jenkins (CTO & DevOps)
           </MDTypography>
           <MDTypography variant="body2" color="text">
-            Managing Infrastructure: 157.245.185.88
+            Managing Infrastructure
           </MDTypography>
         </MDBox>
         <Grid container spacing={3}>

@@ -1,42 +1,22 @@
 #!/bin/bash
-# DCG Admin Dashboard Deployment Script
-# Ensures proper cache clearing and linting before build
+# ============================================================
+# DEPRECATED — DO NOT USE
+# ============================================================
+# This manual deployment script has been replaced by the
+# GitHub Actions CI/CD pipeline at .github/workflows/ci-cd.yml
+#
+# To deploy:
+#   1. Push to the 'main' branch
+#   2. GitHub Actions will automatically build, test, and deploy
+#
+# For manual builds (local testing only):
+#   npm run build
+# ============================================================
 
-set -e  # Exit on any error
-
-echo "=== DCG Admin Dashboard Deployment ==="
+echo "ERROR: This script is deprecated."
 echo ""
-
-# Step 1: Clear cache
-echo "1. Clearing node_modules cache..."
-rm -rf node_modules/.cache
-echo "   ✓ Cache cleared"
-
-# Step 2: Run ESLint fix on all source files
+echo "Deployments are now handled by GitHub Actions CI/CD."
+echo "Push to the 'main' branch to trigger an automatic deployment."
 echo ""
-echo "2. Running ESLint fix on source files..."
-npx eslint --fix "src/**/*.js" 2>/dev/null || true
-echo "   ✓ ESLint fix completed"
-
-# Step 3: Run Prettier on all source files
-echo ""
-echo "3. Running Prettier on source files..."
-npx prettier --write "src/**/*.js" 2>/dev/null || true
-echo "   ✓ Prettier formatting completed"
-
-# Step 4: Build
-echo ""
-echo "4. Building production bundle..."
-npm run build
-echo "   ✓ Build completed"
-
-# Step 5: Deploy to server
-echo ""
-echo "5. Deploying to server..."
-scp -r build/* dcg@157.245.185.88:/home/dcg/dashboard/
-echo "   ✓ Deployed to dashboard.directconnectglobal.com"
-
-echo ""
-echo "=== Deployment Complete ==="
-echo "View at: https://dashboard.directconnectglobal.com"
-
+echo "See: .github/workflows/ci-cd.yml"
+exit 1

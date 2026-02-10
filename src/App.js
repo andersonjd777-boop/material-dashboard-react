@@ -4,7 +4,7 @@
  * Includes OpenReplay page view tracking
  */
 
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect } from "react";
 
 // react-router components
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
@@ -42,12 +42,15 @@ import { useMaterialUIController, setMiniSidenav } from "context";
 // Auth context
 import { useAuth } from "context/AuthContext";
 
+// Protected route guard
+import ProtectedRoute from "components/ProtectedRoute";
+
 // OpenReplay page view tracking
 import { NavigationEvents } from "services/openreplayEvents";
 
-// DCG Logo placeholder (will be replaced with actual logo)
-const brandWhite = null;
-const brandDark = null;
+// DCG Logo — uses favicon as brand image
+const brandWhite = "/favicon.png";
+const brandDark = "/favicon.png";
 
 export default function App() {
   const { isAuthenticated } = useAuth();
@@ -66,7 +69,7 @@ export default function App() {
   const { pathname } = useLocation();
 
   // Cache for the rtl
-  useMemo(() => {
+  useEffect(() => {
     const cacheRtl = createCache({
       key: "rtl",
       stylisPlugins: [rtlPlugin],
@@ -113,7 +116,13 @@ export default function App() {
       }
 
       if (route.route) {
-        return <Route exact path={route.route} element={route.component} key={route.key} />;
+        const isAuthRoute = route.route.includes("authentication");
+        const element = isAuthRoute ? (
+          route.component
+        ) : (
+          <ProtectedRoute>{route.component}</ProtectedRoute>
+        );
+        return <Route exact path={route.route} element={element} key={route.key} />;
       }
 
       return null;
@@ -123,7 +132,7 @@ export default function App() {
     <CacheProvider value={rtlCache}>
       <ThemeProvider theme={darkMode ? themeDarkRTL : themeRTL}>
         <CssBaseline />
-        {layout === "dashboard" && (
+        {layout === "dashboard" && isAuthenticated && (
           <Sidenav
             color={sidenavColor}
             brand={(transparentSidenav && !darkMode) || whiteSidenav ? brandDark : brandWhite}

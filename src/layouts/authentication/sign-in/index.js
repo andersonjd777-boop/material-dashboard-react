@@ -3,8 +3,9 @@
  * Employee authentication for Direct Connect Global
  */
 
-import { useState } from "react";
+import { useState, useRef, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
+import * as Yup from "yup";
 
 // @mui material components
 import Card from "@mui/material/Card";
@@ -31,6 +32,18 @@ import { useAuth } from "context/AuthContext";
 // Images
 import bgImage from "assets/images/bg-sign-in-basic.jpeg";
 
+// Validation schema
+const loginSchema = Yup.object().shape({
+  email: Yup.string().email("Invalid email address").required("Email is required"),
+  password: Yup.string()
+    .min(6, "Password must be at least 6 characters")
+    .required("Password is required"),
+});
+
+// Rate limiting constants
+const MAX_ATTEMPTS = 5;
+const LOCKOUT_DURATION_MS = 60000; // 1 minute
+
 function SignIn() {
   const navigate = useNavigate();
   const { login, loading, error } = useAuth();
@@ -40,23 +53,59 @@ function SignIn() {
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [localError, setLocalError] = useState("");
+  const [fieldErrors, setFieldErrors] = useState({});
+  const [isLocked, setIsLocked] = useState(false);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setLocalError("");
+  // Rate limiting refs (persist across renders without causing re-renders)
+  const attemptCount = useRef(0);
+  const lockoutTimer = useRef(null);
 
-    if (!email || !password) {
-      setLocalError("Please enter email and password");
-      return;
-    }
+  const handleSubmit = useCallback(
+    async (e) => {
+      e.preventDefault();
+      setLocalError("");
+      setFieldErrors({});
 
-    const result = await login(email, password);
-    if (result.success) {
-      navigate("/dashboard");
-    } else {
-      setLocalError(result.message || "Login failed");
-    }
-  };
+      // Rate limiting check
+      if (isLocked) {
+        setLocalError("Too many failed attempts. Please wait 1 minute before trying again.");
+        return;
+      }
+
+      // Yup validation
+      try {
+        await loginSchema.validate({ email, password }, { abortEarly: false });
+      } catch (validationError) {
+        const errors = {};
+        validationError.inner.forEach((err) => {
+          errors[err.path] = err.message;
+        });
+        setFieldErrors(errors);
+        return;
+      }
+
+      const result = await login(email, password, rememberMe);
+      if (result.success) {
+        attemptCount.current = 0;
+        navigate("/dashboard");
+      } else {
+        attemptCount.current += 1;
+        setLocalError(result.message || "Login failed");
+
+        // Lock out after MAX_ATTEMPTS
+        if (attemptCount.current >= MAX_ATTEMPTS) {
+          setIsLocked(true);
+          setLocalError(`Too many failed attempts (${MAX_ATTEMPTS}). Please wait 1 minute.`);
+          lockoutTimer.current = setTimeout(() => {
+            setIsLocked(false);
+            attemptCount.current = 0;
+            setLocalError("");
+          }, LOCKOUT_DURATION_MS);
+        }
+      }
+    },
+    [email, password, rememberMe, isLocked, login, navigate]
+  );
 
   return (
     <BasicLayout image={bgImage}>
@@ -93,8 +142,14 @@ function SignIn() {
                 fullWidth
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                disabled={loading}
+                disabled={loading || isLocked}
+                error={!!fieldErrors.email}
               />
+              {fieldErrors.email && (
+                <MDTypography variant="caption" color="error" ml={1}>
+                  {fieldErrors.email}
+                </MDTypography>
+              )}
             </MDBox>
             <MDBox mb={2}>
               <MDInput
@@ -103,7 +158,8 @@ function SignIn() {
                 fullWidth
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                disabled={loading}
+                disabled={loading || isLocked}
+                error={!!fieldErrors.password}
                 InputProps={{
                   endAdornment: (
                     <InputAdornment position="end">
@@ -118,6 +174,11 @@ function SignIn() {
                   ),
                 }}
               />
+              {fieldErrors.password && (
+                <MDTypography variant="caption" color="error" ml={1}>
+                  {fieldErrors.password}
+                </MDTypography>
+              )}
             </MDBox>
             <MDBox display="flex" alignItems="center" ml={-1}>
               <Switch checked={rememberMe} onChange={() => setRememberMe(!rememberMe)} />
@@ -132,7 +193,13 @@ function SignIn() {
               </MDTypography>
             </MDBox>
             <MDBox mt={4} mb={1}>
-              <MDButton variant="gradient" color="dark" fullWidth type="submit" disabled={loading}>
+              <MDButton
+                variant="gradient"
+                color="dark"
+                fullWidth
+                type="submit"
+                disabled={loading || isLocked}
+              >
                 {loading ? <CircularProgress size={20} color="inherit" /> : "Sign In"}
               </MDButton>
             </MDBox>

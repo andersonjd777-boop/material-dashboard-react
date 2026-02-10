@@ -15,9 +15,6 @@ Coded by www.creative-tim.com
 
 import { useState, useEffect } from "react";
 
-// react-github-btn
-import GitHubButton from "react-github-btn";
-
 // @mui material components
 import Divider from "@mui/material/Divider";
 import Switch from "@mui/material/Switch";
@@ -298,17 +295,7 @@ function Configurator() {
             view documentation
           </MDButton>
         </MDBox>
-        <MDBox display="flex" justifyContent="center">
-          <GitHubButton
-            href="https://github.com/creativetimofficial/material-dashboard-react"
-            data-icon="octicon-star"
-            data-size="large"
-            data-show-count="true"
-            aria-label="Star creativetimofficial/material-dashboard-react on GitHub"
-          >
-            Star
-          </GitHubButton>
-        </MDBox>
+
         <MDBox mt={2} textAlign="center">
           <MDBox mb={0.5}>
             <MDTypography variant="h6">Thank you for sharing!</MDTypography>

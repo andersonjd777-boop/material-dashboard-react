@@ -98,7 +98,7 @@ class ErrorBoundary extends Component {
               fix.
             </MDTypography>
 
-            {process.env.NODE_ENV === "development" && this.state.error && (
+            {window.location.hostname === "localhost" && this.state.error && (
               <MDBox
                 sx={{
                   backgroundColor: "#ffebee",

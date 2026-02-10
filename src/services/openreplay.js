@@ -18,24 +18,36 @@ const OPENREPLAY_CONFIG = {
   // Self-hosted: https://openreplay.yourdomain.com/ingest
   ingestPoint: process.env.REACT_APP_OPENREPLAY_INGEST_POINT || "https://api.openreplay.com/ingest",
 
-  // Enable verbose logging in development
-  __DISABLE_SECURE_MODE: process.env.NODE_ENV === "development",
-
   // Capture console logs
   consoleMethods: ["log", "info", "warn", "error"],
 
   // Network request tracking
   network: {
-    capturePayload: true,
-    ignoreHeaders: ["Authorization", "Cookie"],
+    capturePayload: process.env.NODE_ENV !== "production",
+    ignoreHeaders: ["Authorization", "Cookie", "X-CSRF-Token"],
     sanitizer: (data) => {
       // Sanitize sensitive data from network payloads
+      const sensitiveFields = [
+        "password",
+        "token",
+        "apiKey",
+        "api_key",
+        "secret",
+        "credit_card",
+        "creditCard",
+        "cardNumber",
+        "cvv",
+        "ssn",
+        "socialSecurity",
+        "accessToken",
+        "refreshToken",
+      ];
       if (data.body && typeof data.body === "string") {
         try {
           const parsed = JSON.parse(data.body);
-          if (parsed.password) parsed.password = "[REDACTED]";
-          if (parsed.token) parsed.token = "[REDACTED]";
-          if (parsed.apiKey) parsed.apiKey = "[REDACTED]";
+          sensitiveFields.forEach((field) => {
+            if (parsed[field]) parsed[field] = "[REDACTED]";
+          });
           data.body = JSON.stringify(parsed);
         } catch (e) {
           // Not JSON, leave as-is
@@ -46,7 +58,7 @@ const OPENREPLAY_CONFIG = {
   },
 
   // Respect Do Not Track browser setting
-  respectDoNotTrack: false,
+  respectDoNotTrack: true,
 
   // Session recording options
   obscureTextEmails: true,

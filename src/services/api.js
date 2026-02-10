@@ -7,10 +7,8 @@
 import axios from "axios";
 import { ApiEvents } from "./openreplayEvents";
 
-// API base URL - uses relative path in production, falls back to direct IP for local dev
-const API_BASE_URL =
-  process.env.REACT_APP_API_URL ||
-  (window.location.hostname === "localhost" ? "http://157.245.185.88:3000/api" : "/api");
+// API base URL - configured via environment variable, defaults to relative path
+const API_BASE_URL = process.env.REACT_APP_API_URL || "/api";
 
 // Slow request threshold in milliseconds
 const SLOW_REQUEST_THRESHOLD = 3000;
@@ -24,12 +22,19 @@ class ApiService {
       },
     });
 
-    // Add request interceptor to include auth token and track request start
+    // Add request interceptor to include auth token, CSRF token, and track request start
     this.client.interceptors.request.use(
       (config) => {
-        const token = localStorage.getItem("dcg_admin_token");
+        const token =
+          localStorage.getItem("dcg_admin_token") || sessionStorage.getItem("dcg_admin_token");
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
+        }
+
+        // Add CSRF token for state-changing methods
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.content;
+        if (csrfToken && ["post", "put", "patch", "delete"].includes(config.method)) {
+          config.headers["X-CSRF-Token"] = csrfToken;
         }
 
         // Track request start time for performance monitoring
@@ -71,6 +76,9 @@ class ApiService {
         if (error.response?.status === 401) {
           localStorage.removeItem("dcg_admin_token");
           localStorage.removeItem("dcg_admin_user");
+          localStorage.removeItem("dcg_admin_remember");
+          sessionStorage.removeItem("dcg_admin_token");
+          sessionStorage.removeItem("dcg_admin_user");
           window.location.href = "/authentication/sign-in";
         }
         return Promise.reject(error);
@@ -97,6 +105,10 @@ class ApiService {
 
   put(url, data = {}) {
     return this.client.put(url, data);
+  }
+
+  patch(url, data = {}) {
+    return this.client.patch(url, data);
   }
 
   delete(url) {
@@ -606,9 +618,27 @@ class ApiService {
   }
 
   async downloadAttachment(attachmentId) {
-    const token = localStorage.getItem("dcg_admin_token");
-    const url = `${this.client.defaults.baseURL}/messages/attachment/${attachmentId}`;
-    window.open(`${url}?token=${token}`, "_blank");
+    try {
+      const response = await this.client.get(`/messages/attachment/${attachmentId}`, {
+        responseType: "blob",
+      });
+      const blob = new Blob([response.data]);
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      const filename =
+        response.headers["content-disposition"]?.split("filename=")[1]?.replace(/"/g, "") ||
+        `attachment-${attachmentId}`;
+      link.download = filename;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      return response;
+    } catch (error) {
+      console.error("Download attachment failed:", error);
+      throw error;
+    }
   }
 
   async deleteAttachment(attachmentId) {
@@ -616,9 +646,24 @@ class ApiService {
   }
 
   async exportConversation(connectionId, format = "csv") {
-    const token = localStorage.getItem("dcg_admin_token");
-    const url = `${this.client.defaults.baseURL}/messages/export/${connectionId}?format=${format}&token=${token}`;
-    window.open(url, "_blank");
+    try {
+      const response = await this.client.get(`/messages/export/${connectionId}?format=${format}`, {
+        responseType: "blob",
+      });
+      const blob = new Blob([response.data]);
+      const downloadUrl = window.URL.createObjectURL(blob);
+      const link = document.createElement("a");
+      link.href = downloadUrl;
+      link.download = `conversation-${connectionId}.${format}`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      window.URL.revokeObjectURL(downloadUrl);
+      return response;
+    } catch (error) {
+      console.error("Export conversation failed:", error);
+      throw error;
+    }
   }
 
   async getNotificationPreferences() {

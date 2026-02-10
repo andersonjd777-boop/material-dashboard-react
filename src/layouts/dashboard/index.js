@@ -3,7 +3,7 @@
  * Real-time metrics and system status for Direct Connect Global
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, useCallback } from "react";
 import Grid from "@mui/material/Grid";
 import Card from "@mui/material/Card";
 import Icon from "@mui/material/Icon";
@@ -28,13 +28,20 @@ function Dashboard() {
   const [projects, setProjects] = useState([]);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    fetchAllData();
-    const interval = setInterval(fetchAllData, 30000);
-    return () => clearInterval(interval);
-  }, []);
+  // Polling configuration
+  const BASE_INTERVAL = 30000; // 30 seconds
+  const MAX_INTERVAL = 300000; // 5 minutes
+  const intervalRef = useRef(BASE_INTERVAL);
+  const timerRef = useRef(null);
+  const abortControllerRef = useRef(null);
 
-  const fetchAllData = async () => {
+  const fetchAllData = useCallback(async () => {
+    // Abort any in-flight request
+    if (abortControllerRef.current) {
+      abortControllerRef.current.abort();
+    }
+    abortControllerRef.current = new AbortController();
+
     try {
       const [stripe, server, pm2, health, proj] = await Promise.all([
         api.getStripeMetrics().catch(() => null),
@@ -49,11 +56,49 @@ function Dashboard() {
       setHealthCheck(health);
       setProjects(proj?.projects || []);
       setLoading(false);
+      setError(null);
+      // Reset interval on success
+      intervalRef.current = BASE_INTERVAL;
     } catch (err) {
+      if (err?.name === "AbortError") return;
       setError(err.message);
       setLoading(false);
+      // Exponential backoff on failure (double interval, cap at MAX_INTERVAL)
+      intervalRef.current = Math.min(intervalRef.current * 2, MAX_INTERVAL);
     }
-  };
+  }, []);
+
+  // Schedule next poll
+  const scheduleNextPoll = useCallback(() => {
+    if (timerRef.current) clearTimeout(timerRef.current);
+    timerRef.current = setTimeout(() => {
+      fetchAllData().then(scheduleNextPoll);
+    }, intervalRef.current);
+  }, [fetchAllData]);
+
+  useEffect(() => {
+    fetchAllData().then(scheduleNextPoll);
+
+    // Visibility-aware polling: pause when tab is hidden, resume when visible
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        if (timerRef.current) clearTimeout(timerRef.current);
+        if (abortControllerRef.current) abortControllerRef.current.abort();
+      } else {
+        // Immediately fetch and resume polling when tab becomes visible
+        intervalRef.current = BASE_INTERVAL;
+        fetchAllData().then(scheduleNextPoll);
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      if (timerRef.current) clearTimeout(timerRef.current);
+      if (abortControllerRef.current) abortControllerRef.current.abort();
+    };
+  }, [fetchAllData, scheduleNextPoll]);
 
   const getHealthColor = (status) => {
     if (status === "healthy") return "success";
