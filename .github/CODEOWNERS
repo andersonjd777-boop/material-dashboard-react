@@ -1,0 +1,15 @@
+# CODEOWNERS — Require review from specific people for critical paths
+# See: https://docs.github.com/en/repositories/managing-your-repositorys-settings-and-features/customizing-your-repository/about-code-owners
+
+# Default: all changes require admin review
+* @andersonjd777-boop
+
+# Security-critical files require explicit review
+SECURITY.md @andersonjd777-boop
+.github/workflows/ @andersonjd777-boop
+.github/dependabot.yml @andersonjd777-boop
+.env.example @andersonjd777-boop
+public/index.html @andersonjd777-boop
+src/context/AuthContext.js @andersonjd777-boop
+src/services/api.js @andersonjd777-boop
+src/services/openreplay.js @andersonjd777-boop

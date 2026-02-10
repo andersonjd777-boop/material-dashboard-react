@@ -1,3 +1,4 @@
 # https://www.robotstxt.org/robotstxt.html
+# DCG Admin Dashboard — Internal tool, no crawling needed
 User-agent: *
-Disallow:
+Disallow: /
