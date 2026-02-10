@@ -105,6 +105,7 @@ function ProgressLineChart({ color, icon, title, count, progress, height, chart 
             <Line data={data} options={options} style={{ height }} redraw />
           </MDBox>
         ),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         [chart, height, color]
       )}
     </Card>

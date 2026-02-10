@@ -49,6 +49,7 @@ function RTL() {
     setDirection(dispatch, "rtl");
 
     return () => setDirection(dispatch, "ltr");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (

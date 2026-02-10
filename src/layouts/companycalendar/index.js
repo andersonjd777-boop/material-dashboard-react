@@ -57,6 +57,7 @@ function CompanyCalendar() {
 
   useEffect(() => {
     fetchMonthData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentDate]);
 
   const fetchMonthData = async () => {

@@ -63,6 +63,7 @@ function CRMDashboard() {
   useEffect(() => {
     loadCustomers();
     loadAnalytics();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filterType, searchTerm]);
 
   const loadCustomers = async () => {

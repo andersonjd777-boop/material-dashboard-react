@@ -23,7 +23,6 @@ import Icon from "@mui/material/Icon";
 
 // @mui icons
 
-
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";

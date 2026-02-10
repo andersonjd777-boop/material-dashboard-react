@@ -76,6 +76,7 @@ function DefaultDoughnutChart({ icon, title, description, height, chart }) {
             <Doughnut data={data} options={options} redraw />
           </MDBox>
         ),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         [chart, height]
       )}
     </MDBox>

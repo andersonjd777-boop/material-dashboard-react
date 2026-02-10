@@ -76,6 +76,7 @@ function PieChart({ icon, title, description, height, chart }) {
             <Pie data={data} options={options} redraw />
           </MDBox>
         ),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         [chart, height]
       )}
     </MDBox>

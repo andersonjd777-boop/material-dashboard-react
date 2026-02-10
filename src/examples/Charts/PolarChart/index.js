@@ -76,6 +76,7 @@ function PolarChart({ icon, title, description, chart, height }) {
             <PolarArea data={data} options={options} redraw />
           </MDBox>
         ),
+        // eslint-disable-next-line react-hooks/exhaustive-deps
         [chart]
       )}
     </MDBox>

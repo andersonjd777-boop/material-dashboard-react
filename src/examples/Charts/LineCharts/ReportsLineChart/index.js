@@ -76,6 +76,7 @@ function ReportsLineChart({ color, title, description, date, chart }) {
               <Line data={data} options={options} redraw />
             </MDBox>
           ),
+          // eslint-disable-next-line react-hooks/exhaustive-deps
           [chart, color]
         )}
         <MDBox pt={3} pb={1} px={1}>
