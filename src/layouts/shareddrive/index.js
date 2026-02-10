@@ -84,7 +84,8 @@ function SharedDrive() {
     // Voice_Messages folder is served publicly via nginx
     if (filePath.startsWith("Voice_Messages/") || filePath.startsWith("voice_messages/")) {
       const filename = filePath.split("/").pop();
-      return `https://dashboard.directconnectglobal.com/voice_messages/${filename}`;
+      const baseUrl = process.env.REACT_APP_API_URL || "";
+      return `${baseUrl}/voice_messages/${filename}`;
     }
     return null;
   };

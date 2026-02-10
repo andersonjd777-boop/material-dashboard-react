@@ -22,7 +22,7 @@ import Chip from "@mui/material/Chip";
 import Icon from "@mui/material/Icon";
 import CircularProgress from "@mui/material/CircularProgress";
 
-const API_BASE = process.env.REACT_APP_API_URL || "https://dashboard.directconnectglobal.com";
+const API_BASE = process.env.REACT_APP_API_URL || "/api";
 
 function AntiRegression() {
   const [status, setStatus] = useState(null);

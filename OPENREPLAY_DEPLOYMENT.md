@@ -6,7 +6,7 @@ This guide covers deploying OpenReplay for the DCG Admin Dashboard, including bo
 
 ## Recommended Approach: Self-Hosted on DigitalOcean
 
-Given your existing DigitalOcean droplet (157.245.185.88), self-hosting provides:
+Given your existing DigitalOcean droplet, self-hosting provides:
 - **Full data ownership** - Session data stays on your infrastructure
 - **No recurring costs** - Only pay for server resources
 - **Unlimited sessions** - No artificial caps
@@ -31,7 +31,7 @@ Given your existing DigitalOcean droplet (157.245.185.88), self-hosting provides
 
 ```bash
 # SSH into your server
-ssh root@157.245.185.88
+ssh root@<YOUR_SERVER_IP>
 
 # Install Docker and Docker Compose
 curl -fsSL https://get.docker.com -o get-docker.sh

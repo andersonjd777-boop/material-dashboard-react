@@ -46,9 +46,9 @@ LOW IMPACT ───────────────────────
 **Steps**:
 1. Sign up at betteruptime.com
 2. Add monitors:
-   - `https://157.245.185.88:3000/health` (API Health)
+   - `https://<YOUR_SERVER_DOMAIN>:3000/health` (API Health)
    - `https://admin.directconnectglobal.com` (Dashboard)
-   - `https://157.245.185.88` (Server)
+   - `https://<YOUR_SERVER_DOMAIN>` (Server)
 3. Configure Slack/email alerts
 
 ---
