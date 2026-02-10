@@ -71,12 +71,12 @@ function EmailHub() {
     fetchInboxes();
   }, []);
 
-  // Fetch messages when inbox or folder changes
   useEffect(() => {
     if (selectedInbox) {
       fetchMessages();
       fetchFolders();
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedInbox, selectedFolder, page]);
 
   const fetchInboxes = async () => {

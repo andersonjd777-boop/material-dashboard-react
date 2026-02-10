@@ -6,6 +6,8 @@
  * debug user issues by recording and replaying user sessions.
  */
 
+/* eslint-disable no-console -- All console usage is guarded by isDev checks */
+
 import Tracker from "@openreplay/tracker";
 
 const isDev = process.env.NODE_ENV === "development";

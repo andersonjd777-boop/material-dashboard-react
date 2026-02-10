@@ -51,6 +51,7 @@ function GapChecker() {
   // Check authorization on mount
   useEffect(() => {
     checkAuthorization();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const checkAuthorization = async () => {
