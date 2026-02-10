@@ -34,8 +34,11 @@ import MDTypography from "components/MDTypography";
 import MDButton from "components/MDButton";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
+import api from "services/api";
+import { useAuth } from "context/AuthContext";
 
 function ComplianceOfficer() {
+  const { user } = useAuth();
   const [loading, setLoading] = useState(true);
   const [stats, setStats] = useState(null);
   const [requirements, setRequirements] = useState([]);
@@ -51,8 +54,7 @@ function ComplianceOfficer() {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/compliance/dashboard");
-      const data = await response.json();
+      const data = await api.get("/compliance/dashboard");
 
       if (data.status === "success") {
         setStats(data.stats);
@@ -78,8 +80,7 @@ function ComplianceOfficer() {
   // Trigger compliance monitoring
   const triggerMonitoring = async () => {
     try {
-      const response = await fetch("/api/compliance/monitor", { method: "POST" });
-      const data = await response.json();
+      const data = await api.post("/compliance/monitor");
 
       if (data.status === "success") {
         setSuccess("Compliance monitoring started");
@@ -93,19 +94,13 @@ function ComplianceOfficer() {
   // Approve recommendation
   const approveRecommendation = async () => {
     try {
-      const response = await fetch(
-        `/api/compliance/recommendations/${selectedRecommendation.id}/approve`,
+      const data = await api.post(
+        `/compliance/recommendations/${selectedRecommendation.id}/approve`,
         {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            approver_email: "josh@directconnectglobal.com", // TODO: Get from auth
-            approval_notes: approvalNotes,
-          }),
+          approver_email: user?.email || "unknown",
+          approval_notes: approvalNotes,
         }
       );
-
-      const data = await response.json();
 
       if (data.status === "success") {
         setSuccess("Recommendation approved");
@@ -128,19 +123,13 @@ function ComplianceOfficer() {
     }
 
     try {
-      const response = await fetch(
-        `/api/compliance/recommendations/${selectedRecommendation.id}/reject`,
+      const data = await api.post(
+        `/compliance/recommendations/${selectedRecommendation.id}/reject`,
         {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
-            approver_email: "josh@directconnectglobal.com", // TODO: Get from auth
-            rejection_reason: rejectionReason,
-          }),
+          approver_email: user?.email || "unknown",
+          rejection_reason: rejectionReason,
         }
       );
-
-      const data = await response.json();
 
       if (data.status === "success") {
         setSuccess("Recommendation rejected");

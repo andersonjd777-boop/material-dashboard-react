@@ -8,6 +8,8 @@
 
 import Tracker from "@openreplay/tracker";
 
+const isDev = process.env.NODE_ENV === "development";
+
 // Configuration - Update these values after deployment
 const OPENREPLAY_CONFIG = {
   // Project key from OpenReplay dashboard (required)
@@ -64,7 +66,7 @@ const OPENREPLAY_CONFIG = {
   obscureTextEmails: true,
   obscureTextNumbers: false,
   obscureInputEmails: true,
-  defaultInputMode: 0, // 0 = plain, 1 = obscured, 2 = hidden
+  defaultInputMode: 1, // 0 = plain, 1 = obscured, 2 = hidden
 };
 
 // Singleton tracker instance
@@ -77,22 +79,22 @@ let isStarted = false;
  */
 export function initOpenReplay() {
   if (trackerInstance) {
-    console.warn("[OpenReplay] Tracker already initialized");
+    if (isDev) console.warn("[OpenReplay] Tracker already initialized");
     return trackerInstance;
   }
 
   // Don't initialize if project key is not set
   if (OPENREPLAY_CONFIG.projectKey === "YOUR_PROJECT_KEY") {
-    console.warn("[OpenReplay] Project key not configured. Skipping initialization.");
+    if (isDev) console.warn("[OpenReplay] Project key not configured. Skipping initialization.");
     return null;
   }
 
   try {
     trackerInstance = new Tracker(OPENREPLAY_CONFIG);
-    console.log("[OpenReplay] Tracker initialized");
+    if (isDev) console.log("[OpenReplay] Tracker initialized");
     return trackerInstance;
   } catch (error) {
-    console.error("[OpenReplay] Failed to initialize tracker:", error);
+    if (isDev) console.error("[OpenReplay] Failed to initialize tracker:", error);
     return null;
   }
 }
@@ -103,12 +105,12 @@ export function initOpenReplay() {
  */
 export async function startSession(userInfo = {}) {
   if (!trackerInstance) {
-    console.warn("[OpenReplay] Tracker not initialized");
+    if (isDev) console.warn("[OpenReplay] Tracker not initialized");
     return false;
   }
 
   if (isStarted) {
-    console.warn("[OpenReplay] Session already started");
+    if (isDev) console.warn("[OpenReplay] Session already started");
     return true;
   }
 
@@ -124,10 +126,11 @@ export async function startSession(userInfo = {}) {
       },
     });
     isStarted = true;
-    console.log("[OpenReplay] Session started", userInfo.email ? `for ${userInfo.email}` : "");
+    if (isDev)
+      console.log("[OpenReplay] Session started", userInfo.email ? `for ${userInfo.email}` : "");
     return true;
   } catch (error) {
-    console.error("[OpenReplay] Failed to start session:", error);
+    if (isDev) console.error("[OpenReplay] Failed to start session:", error);
     return false;
   }
 }
@@ -143,9 +146,9 @@ export function identifyUser(user) {
     trackerInstance.setMetadata("userName", user.name || "Unknown");
     trackerInstance.setMetadata("userRole", user.role || "user");
     trackerInstance.setMetadata("userId", user.id || "unknown");
-    console.log("[OpenReplay] User identified:", user.email);
+    if (isDev) console.log("[OpenReplay] User identified:", user.email);
   } catch (error) {
-    console.error("[OpenReplay] Failed to identify user:", error);
+    if (isDev) console.error("[OpenReplay] Failed to identify user:", error);
   }
 }
 
@@ -157,9 +160,9 @@ export function clearUser() {
 
   try {
     trackerInstance.setUserID(null);
-    console.log("[OpenReplay] User cleared");
+    if (isDev) console.log("[OpenReplay] User cleared");
   } catch (error) {
-    console.error("[OpenReplay] Failed to clear user:", error);
+    if (isDev) console.error("[OpenReplay] Failed to clear user:", error);
   }
 }
 
@@ -172,7 +175,7 @@ export function trackEvent(name, payload = {}) {
   try {
     trackerInstance.event(name, payload);
   } catch (error) {
-    console.error("[OpenReplay] Failed to track event:", error);
+    if (isDev) console.error("[OpenReplay] Failed to track event:", error);
   }
 }
 
@@ -185,7 +188,7 @@ export function trackError(error, metadata = {}) {
   try {
     trackerInstance.handleError(error, metadata);
   } catch (err) {
-    console.error("[OpenReplay] Failed to track error:", err);
+    if (isDev) console.error("[OpenReplay] Failed to track error:", err);
   }
 }
 

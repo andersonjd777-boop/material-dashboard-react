@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect } from "react";
+import api from "services/api";
 import Grid from "@mui/material/Grid";
 import Card from "@mui/material/Card";
 import Badge from "@mui/material/Badge";
@@ -62,8 +63,7 @@ function CompanyCalendar() {
     try {
       const year = currentDate.getFullYear();
       const month = currentDate.getMonth() + 1;
-      const response = await fetch(`/api/calendar/month/${year}/${month}`);
-      const data = await response.json();
+      const data = await api.get(`/calendar/month/${year}/${month}`);
       setMonthData(data);
       setLoading(false);
     } catch (err) {
@@ -74,8 +74,7 @@ function CompanyCalendar() {
 
   const fetchDayDetails = async (date) => {
     try {
-      const response = await fetch(`/api/calendar/day/${date}`);
-      const data = await response.json();
+      const data = await api.get(`/calendar/day/${date}`);
       setDayDetails(data);
       setSelectedDay(date);
     } catch (err) {
@@ -97,11 +96,7 @@ function CompanyCalendar() {
 
   const handleCreateEvent = async () => {
     try {
-      await fetch("/api/calendar/events", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(newEvent),
-      });
+      await api.post("/calendar/events", newEvent);
       setShowEventDialog(false);
       setNewEvent({
         title: "",

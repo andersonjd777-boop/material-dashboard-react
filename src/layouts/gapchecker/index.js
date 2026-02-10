@@ -6,6 +6,7 @@
  */
 
 import { useState, useEffect } from "react";
+import api from "services/api";
 import Grid from "@mui/material/Grid";
 import Card from "@mui/material/Card";
 import Table from "@mui/material/Table";
@@ -54,8 +55,7 @@ function GapChecker() {
 
   const checkAuthorization = async () => {
     try {
-      const response = await fetch("/api/auth/check-augment-access");
-      const data = await response.json();
+      const data = await api.get("/auth/check-augment-access");
       setAuthorized(data.authorized === true);
       setCheckingAuth(false);
 
@@ -64,7 +64,6 @@ function GapChecker() {
         fetchGaps();
       }
     } catch (error) {
-      console.error("Authorization check failed:", error);
       setAuthorized(false);
       setCheckingAuth(false);
     }
@@ -72,19 +71,17 @@ function GapChecker() {
 
   const fetchStatus = async () => {
     try {
-      const response = await fetch("/api/gap-checker/status");
-      const data = await response.json();
+      const data = await api.get("/gap-checker/status");
       setStatus(data);
     } catch (err) {
-      console.error("Failed to fetch status:", err);
+      /* status fetch failed */
     }
   };
 
   const fetchGaps = async () => {
     try {
       setLoading(true);
-      const response = await fetch("/api/gap-checker/gaps?limit=100");
-      const data = await response.json();
+      const data = await api.get("/gap-checker/gaps", { limit: 100 });
       setGaps(data.gaps || []);
       setFilteredGaps(data.gaps || []);
       setLoading(false);
@@ -96,12 +93,11 @@ function GapChecker() {
 
   const fetchGapDetails = async (gapId) => {
     try {
-      const response = await fetch(`/api/gap-checker/gaps/${gapId}`);
-      const data = await response.json();
+      const data = await api.get(`/gap-checker/gaps/${gapId}`);
       setSelectedGap(data);
       setDetailsOpen(true);
     } catch (err) {
-      console.error("Failed to fetch gap details:", err);
+      /* gap details fetch failed */
     }
   };
 
@@ -126,38 +122,27 @@ function GapChecker() {
   const handleApproveSuggestion = async (suggestionId, approve) => {
     try {
       const endpoint = approve ? "approve" : "reject";
-      const response = await fetch(`/api/gap-checker/suggestions/${suggestionId}/${endpoint}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ notes: approvalNotes }),
+      await api.post(`/gap-checker/suggestions/${suggestionId}/${endpoint}`, {
+        notes: approvalNotes,
       });
 
-      if (response.ok) {
-        setApprovalDialogOpen(false);
-        setApprovalNotes("");
-        // Refresh gap details
-        if (selectedGap) {
-          fetchGapDetails(selectedGap.gap.id);
-        }
+      setApprovalDialogOpen(false);
+      setApprovalNotes("");
+      // Refresh gap details
+      if (selectedGap) {
+        fetchGapDetails(selectedGap.gap.id);
       }
     } catch (err) {
-      console.error("Failed to update suggestion:", err);
+      /* suggestion update failed */
     }
   };
 
   const triggerAnalysis = async () => {
     try {
-      const response = await fetch("/api/gap-checker/analyze", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({}),
-      });
-
-      if (response.ok) {
-        alert("Gap analysis triggered successfully");
-      }
+      await api.post("/gap-checker/analyze", {});
+      alert("Gap analysis triggered successfully");
     } catch (err) {
-      console.error("Failed to trigger analysis:", err);
+      /* analysis trigger failed */
     }
   };
 

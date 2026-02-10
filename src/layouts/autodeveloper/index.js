@@ -13,6 +13,7 @@ import FormControlLabel from "@mui/material/FormControlLabel";
 import Alert from "@mui/material/Alert";
 import CircularProgress from "@mui/material/CircularProgress";
 import Divider from "@mui/material/Divider";
+import api from "services/api";
 import SmartToyIcon from "@mui/icons-material/SmartToy";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import RefreshIcon from "@mui/icons-material/Refresh";
@@ -38,8 +39,7 @@ function AutoDeveloper() {
   // Fetch status
   const fetchStatus = useCallback(async () => {
     try {
-      const response = await fetch("/api/auto-developer/status");
-      const data = await response.json();
+      const data = await api.get("/auto-developer/status");
       setStatus(data);
       setConfig(data.config);
       setLoading(false);
@@ -52,11 +52,10 @@ function AutoDeveloper() {
   // Fetch logs
   const fetchLogs = useCallback(async () => {
     try {
-      const response = await fetch("/api/auto-developer/logs?lines=50");
-      const data = await response.json();
+      const data = await api.get("/auto-developer/logs", { lines: 50 });
       setLogs(data.logs || []);
     } catch (err) {
-      console.error("Error fetching logs:", err);
+      /* logs fetch failed */
     }
   }, []);
 
@@ -64,11 +63,7 @@ function AutoDeveloper() {
   const toggleEnabled = async () => {
     try {
       const newEnabled = !status.enabled;
-      await fetch("/api/auto-developer/toggle", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ enabled: newEnabled }),
-      });
+      await api.post("/auto-developer/toggle", { enabled: newEnabled });
       fetchStatus();
     } catch (err) {
       setError(err.message);
@@ -78,11 +73,7 @@ function AutoDeveloper() {
   // Update configuration
   const updateConfig = async () => {
     try {
-      await fetch("/api/auto-developer/config", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(config),
-      });
+      await api.post("/auto-developer/config", config);
       fetchStatus();
     } catch (err) {
       setError(err.message);
@@ -92,7 +83,7 @@ function AutoDeveloper() {
   // Trigger manual run
   const triggerRun = async () => {
     try {
-      await fetch("/api/auto-developer/trigger", { method: "POST" });
+      await api.post("/auto-developer/trigger");
       setTimeout(fetchStatus, 2000);
       setTimeout(fetchLogs, 3000);
     } catch (err) {

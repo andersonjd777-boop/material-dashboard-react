@@ -359,7 +359,8 @@ class ApiService {
   }
 
   async downloadSharedDriveFile(filePath, openInBrowser = false) {
-    const token = localStorage.getItem("dcg_admin_token");
+    const token =
+      localStorage.getItem("dcg_admin_token") || sessionStorage.getItem("dcg_admin_token");
     const url = `${API_BASE_URL}/files/download/${encodeURIComponent(filePath)}`;
 
     try {
@@ -646,15 +647,20 @@ class ApiService {
   }
 
   async exportConversation(connectionId, format = "csv") {
+    const ALLOWED_FORMATS = ["csv", "json", "pdf", "txt"];
+    const safeFormat = ALLOWED_FORMATS.includes(format) ? format : "csv";
     try {
-      const response = await this.client.get(`/messages/export/${connectionId}?format=${format}`, {
-        responseType: "blob",
-      });
+      const response = await this.client.get(
+        `/messages/export/${connectionId}?format=${safeFormat}`,
+        {
+          responseType: "blob",
+        }
+      );
       const blob = new Blob([response.data]);
       const downloadUrl = window.URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = downloadUrl;
-      link.download = `conversation-${connectionId}.${format}`;
+      link.download = `conversation-${connectionId}.${safeFormat}`;
       document.body.appendChild(link);
       link.click();
       link.remove();

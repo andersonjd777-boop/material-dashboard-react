@@ -69,7 +69,7 @@ function SimpleBlogCard({ image, title, description, action }) {
           </MDTypography>
         </MDBox>
         {action.type === "external" ? (
-          <MuiLink href={action.route} target="_blank" rel="noreferrer">
+          <MuiLink href={action.route} target="_blank" rel="noopener noreferrer">
             <MDButton color={action.color ? action.color : "dark"}>{action.label}</MDButton>
           </MuiLink>
         ) : (

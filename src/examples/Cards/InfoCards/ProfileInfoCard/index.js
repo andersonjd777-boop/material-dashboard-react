@@ -73,7 +73,7 @@ function ProfileInfoCard({ title, description, info, social, action, shadow }) {
       component="a"
       href={link}
       target="_blank"
-      rel="noreferrer"
+      rel="noopener noreferrer"
       fontSize={size.lg}
       color={socialMediaColors[color].main}
       pr={1}

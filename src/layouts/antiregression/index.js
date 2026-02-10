@@ -13,6 +13,7 @@ import MDButton from "components/MDButton";
 import Grid from "@mui/material/Grid";
 import Card from "@mui/material/Card";
 import Table from "@mui/material/Table";
+import api from "services/api";
 import TableBody from "@mui/material/TableBody";
 import TableCell from "@mui/material/TableCell";
 import TableContainer from "@mui/material/TableContainer";
@@ -21,8 +22,6 @@ import TableRow from "@mui/material/TableRow";
 import Chip from "@mui/material/Chip";
 import Icon from "@mui/material/Icon";
 import CircularProgress from "@mui/material/CircularProgress";
-
-const API_BASE = process.env.REACT_APP_API_URL || "/api";
 
 function AntiRegression() {
   const [status, setStatus] = useState(null);
@@ -38,18 +37,15 @@ function AntiRegression() {
   const fetchData = async () => {
     try {
       setLoading(true);
-      const [statusRes, dashboardRes, approvalsRes] = await Promise.all([
-        fetch(`${API_BASE}/api/anti-regression/status`),
-        fetch(`${API_BASE}/api/anti-regression/dashboard`),
-        fetch(`${API_BASE}/api/anti-regression/approvals/pending`),
+      const [statusData, dashboardData, approvalsData] = await Promise.all([
+        api.get("/anti-regression/status").catch(() => null),
+        api.get("/anti-regression/dashboard").catch(() => null),
+        api.get("/anti-regression/approvals/pending").catch(() => null),
       ]);
 
-      if (statusRes.ok) setStatus(await statusRes.json());
-      if (dashboardRes.ok) setDashboard(await dashboardRes.json());
-      if (approvalsRes.ok) {
-        const data = await approvalsRes.json();
-        setPendingApprovals(data.approvals || []);
-      }
+      if (statusData) setStatus(statusData);
+      if (dashboardData) setDashboard(dashboardData);
+      if (approvalsData) setPendingApprovals(approvalsData.approvals || []);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -59,14 +55,10 @@ function AntiRegression() {
 
   const handleApprove = async (id) => {
     try {
-      const res = await fetch(`${API_BASE}/api/anti-regression/approve/${id}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ approver_email: "admin@directconnectglobal.com" }),
+      await api.post(`/anti-regression/approve/${id}`, {
+        approver_email: "admin@directconnectglobal.com",
       });
-      if (res.ok) {
-        fetchData();
-      }
+      fetchData();
     } catch (err) {
       alert("Failed to approve: " + err.message);
     }
@@ -76,14 +68,11 @@ function AntiRegression() {
     const reason = prompt("Rejection reason:");
     if (!reason) return;
     try {
-      const res = await fetch(`${API_BASE}/api/anti-regression/reject/${id}`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ rejector_email: "admin@directconnectglobal.com", reason }),
+      await api.post(`/anti-regression/reject/${id}`, {
+        rejector_email: "admin@directconnectglobal.com",
+        reason,
       });
-      if (res.ok) {
-        fetchData();
-      }
+      fetchData();
     } catch (err) {
       alert("Failed to reject: " + err.message);
     }
@@ -91,14 +80,9 @@ function AntiRegression() {
 
   const triggerScan = async () => {
     try {
-      const res = await fetch(`${API_BASE}/api/anti-regression/scan`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-      });
-      if (res.ok) {
-        alert("Scan triggered successfully");
-        fetchData();
-      }
+      await api.post("/anti-regression/scan");
+      alert("Scan triggered successfully");
+      fetchData();
     } catch (err) {
       alert("Failed to trigger scan: " + err.message);
     }

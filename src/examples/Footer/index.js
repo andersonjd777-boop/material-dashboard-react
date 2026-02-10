@@ -17,7 +17,7 @@ function Footer({ company, links }) {
   const renderLinks = () =>
     links.map((link) => (
       <MDBox key={link.name} component="li" px={2} lineHeight={1}>
-        <Link href={link.href} target="_blank">
+        <Link href={link.href} target="_blank" rel="noopener noreferrer">
           <MDTypography variant="button" fontWeight="regular" color="text">
             {link.name}
           </MDTypography>
@@ -44,7 +44,7 @@ function Footer({ company, links }) {
         px={1.5}
       >
         &copy; {new Date().getFullYear()}
-        <Link href={href} target="_blank">
+        <Link href={href} target="_blank" rel="noopener noreferrer">
           <MDTypography variant="button" fontWeight="medium">
             &nbsp;{name}&nbsp;
           </MDTypography>

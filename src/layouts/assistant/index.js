@@ -5,6 +5,7 @@
  */
 
 import { useState, useRef, useEffect } from "react";
+import DOMPurify from "dompurify";
 import Card from "@mui/material/Card";
 import Icon from "@mui/material/Icon";
 import TextField from "@mui/material/TextField";
@@ -131,7 +132,13 @@ function Assistant() {
                     variant="body2"
                     sx={{ whiteSpace: "pre-wrap", "& strong": { fontWeight: "bold" } }}
                     dangerouslySetInnerHTML={{
-                      __html: msg.content.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>"),
+                      __html: DOMPurify.sanitize(
+                        msg.content.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>"),
+                        {
+                          ALLOWED_TAGS: ["strong", "em", "b", "i", "br", "p", "span"],
+                          ALLOWED_ATTR: [],
+                        }
+                      ),
                     }}
                   />
                 </MDBox>

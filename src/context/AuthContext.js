@@ -4,7 +4,15 @@
  * Includes OpenReplay integration for user identification
  */
 
-import { createContext, useContext, useState, useEffect, useMemo } from "react";
+import {
+  createContext,
+  useContext,
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+} from "react";
 import PropTypes from "prop-types";
 import { jwtDecode } from "jwt-decode";
 import api from "services/api";
@@ -26,7 +34,7 @@ const STORAGE_KEYS = {
 function isTokenExpired(token) {
   try {
     const decoded = jwtDecode(token);
-    if (!decoded.exp) return false; // No expiry claim — treat as valid
+    if (!decoded.exp) return true; // No expiry claim — treat as expired for safety
     return decoded.exp * 1000 < Date.now() - 60000;
   } catch {
     return true;
@@ -40,10 +48,13 @@ function getStorage() {
   return localStorage.getItem(STORAGE_KEYS.REMEMBER) === "true" ? localStorage : sessionStorage;
 }
 
+const IDLE_TIMEOUT_MS = 15 * 60 * 1000; // 15 minutes
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const idleTimerRef = useRef(null);
 
   // Check for existing token on mount (check both storages)
   useEffect(() => {
@@ -77,7 +88,50 @@ export function AuthProvider({ children }) {
     setLoading(false);
   }, []);
 
-  const login = async (email, password, rememberMe = false) => {
+  const logout = useCallback(() => {
+    if (user) {
+      AuthEvents.logout(user.email);
+    }
+    clearUser();
+
+    // Clear both storages
+    localStorage.removeItem(STORAGE_KEYS.TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.USER);
+    localStorage.removeItem(STORAGE_KEYS.REMEMBER);
+    sessionStorage.removeItem(STORAGE_KEYS.TOKEN);
+    sessionStorage.removeItem(STORAGE_KEYS.USER);
+    api.setToken(null);
+    setUser(null);
+
+    // Clear idle timer
+    if (idleTimerRef.current) {
+      clearTimeout(idleTimerRef.current);
+      idleTimerRef.current = null;
+    }
+  }, [user]);
+
+  // Session inactivity timeout (15 minutes)
+  useEffect(() => {
+    if (!user) return;
+
+    const resetIdleTimer = () => {
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+      idleTimerRef.current = setTimeout(() => {
+        logout();
+      }, IDLE_TIMEOUT_MS);
+    };
+
+    const events = ["mousedown", "keydown", "scroll", "touchstart"];
+    events.forEach((event) => window.addEventListener(event, resetIdleTimer));
+    resetIdleTimer(); // Start the timer
+
+    return () => {
+      events.forEach((event) => window.removeEventListener(event, resetIdleTimer));
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    };
+  }, [user, logout]);
+
+  const login = useCallback(async (email, password, rememberMe = false) => {
     try {
       setError(null);
       setLoading(true);
@@ -117,23 +171,7 @@ export function AuthProvider({ children }) {
     } finally {
       setLoading(false);
     }
-  };
-
-  const logout = () => {
-    if (user) {
-      AuthEvents.logout(user.email);
-    }
-    clearUser();
-
-    // Clear both storages
-    localStorage.removeItem(STORAGE_KEYS.TOKEN);
-    localStorage.removeItem(STORAGE_KEYS.USER);
-    localStorage.removeItem(STORAGE_KEYS.REMEMBER);
-    sessionStorage.removeItem(STORAGE_KEYS.TOKEN);
-    sessionStorage.removeItem(STORAGE_KEYS.USER);
-    api.setToken(null);
-    setUser(null);
-  };
+  }, []);
 
   const value = useMemo(
     () => ({
@@ -144,7 +182,7 @@ export function AuthProvider({ children }) {
       logout,
       isAuthenticated: !!user,
     }),
-    [user, loading, error]
+    [user, loading, error, login, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

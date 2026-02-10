@@ -13,6 +13,7 @@ import FormControl from "@mui/material/FormControl";
 import InputLabel from "@mui/material/InputLabel";
 import RefreshIcon from "@mui/icons-material/Refresh";
 import BugReportIcon from "@mui/icons-material/BugReport";
+import api from "services/api";
 import HealthAndSafetyIcon from "@mui/icons-material/HealthAndSafety";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 
@@ -32,31 +33,28 @@ function AutoHealer() {
 
   const fetchStatus = useCallback(async () => {
     try {
-      const response = await fetch("/api/auto-healer/status");
-      const data = await response.json();
+      const data = await api.get("/auto-healer/status");
       setStatus(data);
     } catch (error) {
-      console.error("Failed to fetch status:", error);
+      /* status fetch failed */
     }
   }, []);
 
   const fetchBugs = useCallback(async () => {
     try {
-      const response = await fetch("/api/auto-healer/bugs");
-      const data = await response.json();
+      const data = await api.get("/auto-healer/bugs");
       setBugs(data);
     } catch (error) {
-      console.error("Failed to fetch bugs:", error);
+      /* bugs fetch failed */
     }
   }, []);
 
   const fetchLogs = useCallback(async () => {
     try {
-      const response = await fetch(`/api/auto-healer/logs/${logType}`);
-      const data = await response.json();
+      const data = await api.get(`/auto-healer/logs/${logType}`);
       setLogs(data.logs || []);
     } catch (error) {
-      console.error("Failed to fetch logs:", error);
+      /* logs fetch failed */
     }
   }, [logType]);
 
@@ -68,23 +66,19 @@ function AutoHealer() {
 
   const changeMode = async (newMode) => {
     try {
-      await fetch("/api/auto-healer/mode", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ mode: newMode }),
-      });
+      await api.post("/auto-healer/mode", { mode: newMode });
       await fetchStatus();
     } catch (error) {
-      console.error("Failed to change mode:", error);
+      /* mode change failed */
     }
   };
 
   const triggerScan = async () => {
     try {
-      await fetch("/api/auto-healer/trigger", { method: "POST" });
+      await api.post("/auto-healer/trigger");
       setTimeout(refreshAll, 3000);
     } catch (error) {
-      console.error("Failed to trigger scan:", error);
+      /* trigger scan failed */
     }
   };
 

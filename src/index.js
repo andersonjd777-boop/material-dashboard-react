@@ -55,13 +55,15 @@ const container = document.getElementById("app");
 const root = createRoot(container);
 
 root.render(
-  <BrowserRouter>
-    <ErrorBoundary name="RootErrorBoundary">
-      <AuthProvider>
-        <MaterialUIControllerProvider>
-          <App />
-        </MaterialUIControllerProvider>
-      </AuthProvider>
-    </ErrorBoundary>
-  </BrowserRouter>
+  <React.StrictMode>
+    <BrowserRouter>
+      <ErrorBoundary name="RootErrorBoundary">
+        <AuthProvider>
+          <MaterialUIControllerProvider>
+            <App />
+          </MaterialUIControllerProvider>
+        </AuthProvider>
+      </ErrorBoundary>
+    </BrowserRouter>
+  </React.StrictMode>
 );

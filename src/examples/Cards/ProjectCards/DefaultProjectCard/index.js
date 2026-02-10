@@ -94,7 +94,7 @@ function DefaultProjectCard({ image, label, title, description, action, authors 
               component="a"
               href={action.route}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               variant="h5"
               textTransform="capitalize"
             >
@@ -123,7 +123,7 @@ function DefaultProjectCard({ image, label, title, description, action, authors 
               component="a"
               href={action.route}
               target="_blank"
-              rel="noreferrer"
+              rel="noopener noreferrer"
               variant="outlined"
               size="small"
               color={action.color}

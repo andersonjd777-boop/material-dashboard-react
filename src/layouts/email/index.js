@@ -4,6 +4,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
+import DOMPurify from "dompurify";
 import Card from "@mui/material/Card";
 import Icon from "@mui/material/Icon";
 import IconButton from "@mui/material/IconButton";
@@ -553,7 +554,58 @@ function EmailHub() {
                   <Divider sx={{ my: 2 }} />
                   <MDBox sx={{ "& img": { maxWidth: "100%" } }}>
                     {selectedMessage.html ? (
-                      <div dangerouslySetInnerHTML={{ __html: selectedMessage.html }} />
+                      <div
+                        dangerouslySetInnerHTML={{
+                          __html: DOMPurify.sanitize(selectedMessage.html, {
+                            ALLOWED_TAGS: [
+                              "p",
+                              "br",
+                              "b",
+                              "i",
+                              "em",
+                              "strong",
+                              "a",
+                              "ul",
+                              "ol",
+                              "li",
+                              "h1",
+                              "h2",
+                              "h3",
+                              "h4",
+                              "h5",
+                              "h6",
+                              "blockquote",
+                              "pre",
+                              "code",
+                              "span",
+                              "div",
+                              "table",
+                              "thead",
+                              "tbody",
+                              "tr",
+                              "td",
+                              "th",
+                              "img",
+                              "hr",
+                            ],
+                            ALLOWED_ATTR: [
+                              "href",
+                              "src",
+                              "alt",
+                              "title",
+                              "class",
+                              "style",
+                              "target",
+                              "rel",
+                              "width",
+                              "height",
+                              "colspan",
+                              "rowspan",
+                            ],
+                            ALLOW_DATA_ATTR: false,
+                          }),
+                        }}
+                      />
                     ) : (
                       <MDTypography variant="body2" sx={{ whiteSpace: "pre-wrap" }}>
                         {selectedMessage.text}

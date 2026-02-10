@@ -52,7 +52,7 @@ function ProfilesList({ title, profiles, shadow }) {
             component="a"
             href={action.route}
             target="_blank"
-            rel="noreferrer"
+            rel="noopener noreferrer"
             variant="text"
             color={action.color}
           >

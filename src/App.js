@@ -45,6 +45,9 @@ import { useAuth } from "context/AuthContext";
 // Protected route guard
 import ProtectedRoute from "components/ProtectedRoute";
 
+// Error Boundary for per-page error isolation
+import ErrorBoundary from "components/ErrorBoundary";
+
 // OpenReplay page view tracking
 import { NavigationEvents } from "services/openreplayEvents";
 
@@ -118,9 +121,11 @@ export default function App() {
       if (route.route) {
         const isAuthRoute = route.route.includes("authentication");
         const element = isAuthRoute ? (
-          route.component
+          <ErrorBoundary name={route.key || "auth-page"}>{route.component}</ErrorBoundary>
         ) : (
-          <ProtectedRoute>{route.component}</ProtectedRoute>
+          <ProtectedRoute>
+            <ErrorBoundary name={route.key || "page"}>{route.component}</ErrorBoundary>
+          </ProtectedRoute>
         );
         return <Route exact path={route.route} element={element} key={route.key} />;
       }

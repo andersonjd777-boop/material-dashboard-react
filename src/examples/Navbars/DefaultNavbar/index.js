@@ -148,7 +148,7 @@ function DefaultNavbar({ transparent, light, action }) {
                 component="a"
                 href={action.route}
                 target="_blank"
-                rel="noreferrer"
+                rel="noopener noreferrer"
                 variant="gradient"
                 color={action.color ? action.color : "info"}
                 size="small"

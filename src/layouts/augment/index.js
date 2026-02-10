@@ -10,6 +10,7 @@
 
 import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
+import api from "services/api";
 import Grid from "@mui/material/Grid";
 import Card from "@mui/material/Card";
 import Icon from "@mui/material/Icon";
@@ -45,8 +46,7 @@ function AugmentControl() {
 
   const checkAuthorization = async () => {
     try {
-      const response = await fetch("/api/auth/check-augment-access");
-      const data = await response.json();
+      const data = await api.get("/auth/check-augment-access");
       setAuthorized(data.authorized === true);
       setCheckingAuth(false);
 
@@ -54,7 +54,6 @@ function AugmentControl() {
         fetchAllStatus();
       }
     } catch (error) {
-      console.error("Authorization check failed:", error);
       setAuthorized(false);
       setCheckingAuth(false);
     }
@@ -70,25 +69,18 @@ function AugmentControl() {
 
   const fetchAllStatus = async () => {
     try {
-      const [healerRes, devRes, complianceRes, gapRes] = await Promise.all([
-        fetch("/api/auto-healer/status").catch(() => ({
-          json: async () => ({ enabled: false, bugs_detected: 0, mode: "monitor" }),
-        })),
-        fetch("/api/auto-developer/status").catch(() => ({
-          json: async () => ({ enabled: false, stats: { tasks_pending: 0 } }),
-        })),
-        fetch("/api/compliance/dashboard").catch(() => ({
-          json: async () => ({ stats: { compliance_score: 0, critical_issues: 0 } }),
-        })),
-        fetch("/api/gap-checker/status").catch(() => ({
-          json: async () => ({ gaps: [], pending_suggestions: 0 }),
-        })),
+      const [healerData, devData, complianceData, gapData] = await Promise.all([
+        api
+          .get("/auto-healer/status")
+          .catch(() => ({ enabled: false, bugs_detected: 0, mode: "monitor" })),
+        api
+          .get("/auto-developer/status")
+          .catch(() => ({ enabled: false, stats: { tasks_pending: 0 } })),
+        api
+          .get("/compliance/dashboard")
+          .catch(() => ({ stats: { compliance_score: 0, critical_issues: 0 } })),
+        api.get("/gap-checker/status").catch(() => ({ gaps: [], pending_suggestions: 0 })),
       ]);
-
-      const healerData = await healerRes.json();
-      const devData = await devRes.json();
-      const complianceData = await complianceRes.json();
-      const gapData = await gapRes.json();
 
       setSystems({
         autoHealer: {
@@ -132,14 +124,10 @@ function AugmentControl() {
     if (system === "autoDeveloper") {
       try {
         const newEnabled = !systems.autoDeveloper.enabled;
-        await fetch("/api/auto-developer/toggle", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ enabled: newEnabled }),
-        });
+        await api.post("/auto-developer/toggle", { enabled: newEnabled });
         fetchAllStatus();
       } catch (error) {
-        console.error("Error toggling Auto-Developer:", error);
+        /* toggle failed */
       }
     }
   };
