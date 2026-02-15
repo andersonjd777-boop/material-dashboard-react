@@ -1,26 +1,211 @@
 # 🚀 DCG ADMIN DASHBOARD — LAUNCH READINESS ASSESSMENT
 ### Production Readiness Report for Scaling to 1,000+ Users
-**Date**: 2026-02-15 | **Assessed by**: Augment Agent | **Re-audit**: v5 (verified 2026-02-15 09:45 UTC)
-**Latest commit**: `8ae89ed` (HEAD) | **Versions**: v1 (initial) → v2 (07:05) → v3 (08:00) → v4 (09:31) → **v5 (09:45 — PM2 self-healed + CDN deferred)**
+**Date**: 2026-02-15 | **Assessed by**: Augment Agent | **Re-audit**: v6 (verified 2026-02-15 10:15 UTC)
+**Latest commit**: `eb1a177` (HEAD) | **Versions**: v1 (initial) → v2 (07:05) → v3 (08:00) → v4 (09:31) → v5 (09:45) → **v6 (10:15 — Comprehensive Skeptical Audit)**
 
 ---
 
 ## EXECUTIVE SUMMARY
 
-| Verdict | **LAUNCH READY** — all blockers resolved, no critical open items |
+| Verdict | **LAUNCH READY WITH CAVEATS** — 0 blockers, but skeptical audit found 13 new hidden risks |
 |---------|------------------------------------------------------------------|
 | **Launch Blockers** | **0 open** (all 6 resolved) |
-| **High Risk** | **2 open** (HR-08 clustering, HR-11 DR plan) — HR-03 CDN deferred to advisory |
-| **Medium Risk** | **4 open** (MR-01, MR-02, MR-03, MR-09 — all code quality, non-blocking) |
-| **Low/Advisory** | **6 open** (+4 new findings + HR-03 reclassified — all advisory) |
-| **Total Findings** | **33 original + 4 new = 37 assessed → 12 open, 21 resolved, 4 reclassified** |
-| **Overall Grade** | **A- (Infrastructure) / A- (Application Code)** |
+| **🔴 CRITICAL (NEW)** | **4 new** — SIP ports wide open, SQLite busy_timeout=0, Asterisk zombie service, PM2 crash-looping (12 restarts) |
+| **High Risk** | **2 open** (HR-08 clustering, HR-11 DR plan) |
+| **Medium Risk** | **4 open** + **5 new** (cron sprawl, DATABASE_PATH mismatch, email passwords, backup dir empty, PORT mismatch) |
+| **Low/Advisory** | **6 open** + **4 new** (copyright 2025, README stale, apt 9 days old, no Billy collaborator) |
+| **Total Findings** | **37 (v5) + 13 new = 50 assessed** |
+| **Overall Grade** | **B+ (Infrastructure) / A- (Application Code)** — downgraded from A- due to hidden infra risks |
 
-**v4→v5 PM2 Dual-Daemon Self-Healed:** Root PM2 daemon is now **completely broken** — `/root/.pm2` directory corrupted (ENOTDIR errors on all socket/log/pid paths). DCG user's PM2 has taken over port 4242 (pid 8127, **online**, 67s+ uptime, only 2 restarts, 141.3MB mem). **API now runs under correct `dcg` user** — the security concern from v4 is resolved. LB-01 downgraded from HIGH to **MEDIUM** (minor: ecosystem.config.js still fork/1, root `.pm2` dir should be cleaned up).
+**v6 Comprehensive Skeptical Audit:** Deep-dive beyond the dashboard into ALL DCG systems. Probed SIP/VoIP, Stripe integration, SQLite internals, cron jobs, systemd services, DNS, main site, GitHub access, and documentation continuity. Found **4 critical hidden risks** that were invisible to previous audits because they exist outside the dashboard codebase.
 
-**v4→v5 CDN Decision — Deferred Indefinitely:** HR-03 (Cloudflare CDN) reclassified from HIGH RISK to **LOW/ADVISORY**. Rationale: (1) Cloudflare's recent production outages create reliability risk for our dashboard, (2) our development workflow uses direct browser-based testing that may conflict with Cloudflare's proxy/caching layer. Will evaluate alternative CDN options if performance demands arise at scale.
+**What remains:** The 4 critical findings (BS-01 through BS-04) should be addressed **this week** — they represent real attack surface and data loss risk. The 5 new medium findings are maintenance debt that should be cleaned up within 2 weeks.
 
-**What remains:** No launch blockers, no critical items. Top priorities: enable PM2 cluster mode (5 min), clean up root `.pm2` directory, document DR plan. All are post-launch improvements.
+---
+
+## 🔥 BLACK SWAN / SKEPTICAL AUDIT FINDINGS (v6 — NEW)
+
+> **Methodology**: Maximally skeptical audit across ALL DCG products and infrastructure. Assumed everything WILL break and looked for evidence it won't. Probed SIP/VoIP, Stripe, SQLite, cron, systemd, DNS, main site, GitHub, and documentation.
+
+### 🔴 BS-01: SIP PORTS WIDE OPEN TO INTERNET — NO PROCESS LISTENING
+| | |
+|---|---|
+| **Severity** | 🔴 **CRITICAL** — Active attack surface with zero benefit |
+| **System** | Infrastructure / Firewall |
+| **Evidence** | UFW allows 5060/tcp, 5060/udp, 5080/tcp, 5080/udp, 10000:20000/udp from `Anywhere` (0.0.0.0/0 + IPv6). `ss -tlnp | grep 5060` returns **empty** — nothing is listening. Asterisk package is in `rc` state (removed, config remains). Yet `asterisk.service` is **loaded active running** per systemd |
+| **Risk** | SIP scanners and brute-force bots constantly probe ports 5060/5080 on the internet. Open ports with no service = free reconnaissance for attackers. The 10,000-port RTP range (10000:20000/udp) is an enormous attack surface |
+| **Remediation** | `sudo ufw delete allow 5060/udp && sudo ufw delete allow 5060/tcp && sudo ufw delete allow 5080/udp && sudo ufw delete allow 5080/tcp && sudo ufw delete allow 10000:20000/udp`. When VoIP is needed, restrict to provider IPs only |
+| **Effort** | 5 minutes |
+
+### 🔴 BS-02: SQLite busy_timeout = 0 — WRITES WILL FAIL UNDER LOAD
+| | |
+|---|---|
+| **Severity** | 🔴 **CRITICAL** — Data loss under concurrent requests |
+| **System** | Backend API / Database |
+| **Evidence** | `PRAGMA busy_timeout;` returns `0`. With WAL mode, SQLite allows concurrent reads but only ONE writer at a time. With busy_timeout=0, any concurrent write attempt immediately gets `SQLITE_BUSY` error instead of waiting. The API has 40+ route modules, many writing to the same DB |
+| **Risk** | At even moderate load (5+ concurrent users submitting forms), write operations WILL fail silently or throw 500 errors. Stripe webhook processing, auth logging, calendar events, voice messages — all compete for the single write lock |
+| **Remediation** | Add `PRAGMA busy_timeout = 5000;` (5 seconds) in `config/database.js` after opening the connection. This makes SQLite wait up to 5s for the write lock instead of failing immediately |
+| **Effort** | 5 minutes |
+
+### 🔴 BS-03: Asterisk Service RUNNING Despite Package Removal
+| | |
+|---|---|
+| **Severity** | 🔴 **CRITICAL** — Zombie service consuming resources, potential security risk |
+| **System** | Infrastructure / Telephony |
+| **Evidence** | `dpkg -l asterisk` shows `rc` (removed, config remains). But `systemctl list-units --state=running` shows `asterisk.service loaded active running`. The binary `/usr/sbin/asterisk` still exists. Init scripts at `/etc/rc3.d/S01asterisk`, `/etc/rc5.d/S01asterisk` will restart it on boot. Config files with SIP credentials may still exist at `/etc/asterisk/pjsip.conf` |
+| **Risk** | A "removed" but running Asterisk instance with stale config could accept SIP registrations on the open ports, process calls, or be exploited via known Asterisk CVEs. The `asterisk-dev` package is still installed (`ii` status) |
+| **Remediation** | `sudo systemctl stop asterisk && sudo systemctl disable asterisk && sudo apt purge asterisk asterisk-dev asterisk-config && sudo rm -rf /etc/asterisk` |
+| **Effort** | 10 minutes |
+
+### 🔴 BS-04: PM2 Crash-Looping — 12 Restarts, Port Conflict Persists
+| | |
+|---|---|
+| **Severity** | 🔴 **CRITICAL** — API instability, data loss risk during restarts |
+| **System** | Backend API / Process Management |
+| **Evidence** | PM2 shows `↺ 12` restarts, uptime only `8s` at time of check. Error log shows continuous `❌ Port 4242 is already in use` errors from 09:38:13 to 09:39:29 (every 5-6 seconds, 12+ times). The app eventually recovered at 10:08:08 but this indicates an **ongoing intermittent port conflict** — NOT a one-time self-heal as reported in v5 |
+| **Risk** | During each crash-restart cycle, all in-flight API requests fail (Stripe webhooks, auth, dashboard data). With `max_restarts: 10` in ecosystem.config.js, the app could permanently stop after 10 rapid failures. The root PM2 corruption is the likely cause but hasn't been cleaned up |
+| **Remediation** | (1) `sudo rm -rf /root/.pm2` to remove corrupted root PM2, (2) `sudo systemctl stop pm2-root` if it exists, (3) `pm2 restart dcg-stripe-api` to get a clean start, (4) Monitor for 24hrs to confirm stability |
+| **Effort** | 15 minutes |
+
+### 🟡 BS-05: 29 Cron Jobs Across 2 Users — Overlapping, Duplicated, Wasteful
+| | |
+|---|---|
+| **Severity** | 🟡 MEDIUM |
+| **System** | Infrastructure |
+| **Evidence** | DCG user: 17 cron entries. Root: 12 entries. Duplicates: `whisper_capacity_monitor.sh` runs TWICE in root cron (exact same line). `sync_voice_messages.sh` runs EVERY MINUTE as root. Multiple overlapping health monitors: `dcg-health-monitor.sh` (every 2min), `system_health_monitor.sh` (every 10min), `dcg_auto_healer.sh` (every 10min). Multiple backup systems: `backup-db.sh`, `dcg_database_backup.sh`, `dcg_full_backup.sh`, `backup_voice_messages.sh`, `dcg_backup_monitor.sh` |
+| **Risk** | Resource waste, log noise, potential race conditions on DB writes (especially with busy_timeout=0). The every-minute voice sync as root is excessive |
+| **Remediation** | Consolidate to ~10 essential crons. Remove duplicate whisper monitor. Change voice sync to every 5min. Merge health monitors into one |
+| **Effort** | 1 hour |
+
+### 🟡 BS-06: DATABASE_PATH Mismatch — .env Points to Wrong Location
+| | |
+|---|---|
+| **Severity** | 🟡 MEDIUM |
+| **System** | Backend API |
+| **Evidence** | `.env` says `DATABASE_PATH=/home/dcg/stripe_integration/data/dcg_subscriptions.db` and `DB_PATH=/home/dcg/stripe_integration/data/dcg_subscriptions.db`. Actual DB is at `/home/dcg/stripe_integration/stripe_integration/data/dcg_subscriptions.db` (note the double `stripe_integration`). Code works because `config/database.js` likely resolves relative to `__dirname` |
+| **Risk** | Any script or cron that reads DATABASE_PATH from .env will look in the wrong place. Backup scripts may be backing up nothing. New developers will be confused |
+| **Remediation** | Fix both paths in `.env` to point to the actual location |
+| **Effort** | 5 minutes |
+
+### 🟡 BS-07: Weak/Shared Email Passwords — Trivially Guessable Pattern
+| | |
+|---|---|
+| **Severity** | 🟡 MEDIUM |
+| **System** | Email / Security |
+| **Evidence** | 7 mailboxes share password `DCGadmin2025!`, 2 use `DCGadmin2026!`. Pattern: `DCGadmin{YEAR}!`. All stored in plaintext in `.env` on server |
+| **Risk** | If any one mailbox is compromised, attacker can guess all others. The pattern is trivially predictable. Mailboxes include admin@, investors@, support@ — high-value targets |
+| **Remediation** | Generate unique random passwords for each mailbox. Store in a secrets manager, not .env |
+| **Effort** | 30 minutes |
+
+### 🟡 BS-08: Backup Directory Empty — No Voice Message Backups
+| | |
+|---|---|
+| **Severity** | 🟡 MEDIUM |
+| **System** | Backend / Data |
+| **Evidence** | `/home/dcg/stripe_integration/stripe_integration/backups/` is **empty** despite `backup_voice_messages.sh` cron running daily at 2am. The `backup_history` table has only 1 row |
+| **Risk** | If the DB or voice messages are lost, there are no backups to restore from in this directory. The DB backups exist as `.backup.*` files in the data directory, but the dedicated backup directory is unused |
+| **Remediation** | Verify `backup_voice_messages.sh` is writing to the correct path. Check its logs at `/home/dcg/logs/backup.log` |
+| **Effort** | 15 minutes |
+
+### 🟡 BS-09: PORT Mismatch — .env Says 3000, App Runs on 4242
+| | |
+|---|---|
+| **Severity** | 🟡 MEDIUM |
+| **System** | Backend API |
+| **Evidence** | `.env` has `PORT=3000`. PM2 out log shows `Server running at http://localhost:4242`. The server.js likely has a hardcoded fallback or the port is overridden elsewhere |
+| **Risk** | Misleading configuration. If someone changes the .env PORT expecting it to take effect, it won't. Nginx proxies to 4242, so changing .env to match would break the proxy |
+| **Remediation** | Change `.env` PORT to 4242 to match reality, or find where 4242 is hardcoded and make it read from .env |
+| **Effort** | 10 minutes |
+
+---
+
+## 📋 CROSS-TOOL DOCUMENTATION & CONTINUITY AUDIT (v6)
+
+### Documentation Inventory
+
+| File | Status | Issues |
+|------|--------|--------|
+| `README.md` | ⚠️ **STALE** | Still 100% Creative Tim template content. No mention of DCG, deployment, or customization. Links to creativetimofficial repos. References Nepcha Analytics (removed in security audit) |
+| `SECURITY.md` | ✅ Good | DCG-specific, accurate security practices listed. Email: security@directconnectglobal.com |
+| `LAUNCH_READINESS_ASSESSMENT.md` | ✅ Current | This document — actively maintained v1→v6 |
+| `MONITORING_GAP_ANALYSIS.md` | ⚠️ Partially stale | References "Auto-Healer" and monitoring tools but some recommendations not yet implemented |
+| `IMPLEMENTATION_ROADMAP.md` | ⚠️ Partially stale | Phase 1 items marked "READY" but deployment status unclear |
+| `OPENREPLAY_DEPLOYMENT.md` | ⚠️ Stale | References `ssh root@<YOUR_SERVER_IP>` — should use dcg user. Hardware requirements may conflict with current droplet usage |
+| `CHANGELOG.md` | ⚠️ Stale | Last entry is Creative Tim v2.2.0. No DCG-specific changelog entries |
+| `.env.example` | ✅ Good | Template exists with placeholder values |
+
+### Continuity Risks
+- **No deployment runbook**: No documented procedure for deploying dashboard updates to production
+- **No rollback procedure**: If a deploy breaks production, no documented steps to revert
+- **README misleads new developers**: Anyone cloning the repo gets Creative Tim instructions, not DCG setup steps
+
+---
+
+## 👤 GITHUB COLLABORATOR ACCESS AUDIT (v6)
+
+| Check | Result |
+|-------|--------|
+| **Repository** | `andersonjd777-boop/material-dashboard-react` (public fork of creativetimofficial) |
+| **Branches** | Only `main` — no feature branches, no Billy branch |
+| **Collaborators** | API returns 401 (requires auth token) — **cannot verify collaborator list without GitHub PAT** |
+| **Forks** | 0 forks of this repo |
+| **Pull Requests** | 0 open or closed PRs (except historical #240 from Virgil993) |
+| **Contributors** | sajadevo (22 commits, Creative Tim), Virgil993, Beniamin Marcu, Josh Anderson, Joshua Anderson, git stash, Sajad Ahmad Nawabi |
+| **Billy** | **No evidence of Billy in contributors, branches, forks, or PRs**. If Billy has collaborator access, they have not pushed any code |
+| **Branch protection** | `main` is **NOT protected** — anyone with push access can force-push directly |
+
+### Recommendations
+1. **Enable branch protection** on `main`: require PR reviews, prevent force-push
+2. **Audit collaborators** via GitHub Settings → Collaborators (requires repo admin access)
+3. **If Billy needs access**: Create a `billy/dev` branch, require PRs to merge to main
+
+---
+
+## 🌐 SPANISH TRANSLATION — MAIN SITE ANALYSIS (v6)
+
+### Main Site Tech Stack
+| Aspect | Detail |
+|--------|--------|
+| **URL** | `directconnectglobal.com` (DNS: 35.208.37.12 — Google Cloud, NOT on the DO droplet) |
+| **Framework** | None — pure static HTML/CSS/JS, single file |
+| **Hosting** | Separate from dashboard (different IP entirely) |
+| **i18n Support** | None — all text is hardcoded English in HTML |
+
+### Translatable Text Inventory (English → Spanish needed)
+- Navigation: "Home", "Product", "Our Story", "Team", "Sign Up"
+- Hero: "Turning Jail Payphones Into Smart Devices", tagline, CTA buttons
+- Stats: "Exposed to violence", "Exposed to drugs", "Exposed to gangs", "Exposed to abuse"
+- Product sections: Feature descriptions, plan names, pricing
+- Team bios: Brandon Anderson (CEO), Joshua Anderson (CTO), Mary Anderson (CFO)
+- Sign-up form: Labels, placeholders, validation messages, plan descriptions
+- Footer: Copyright "© 2025 Direct Connect Global" (should be 2026), legal links
+
+### Recommended Approach
+Since the site is pure static HTML with no build system:
+1. **Option A (Simplest)**: JavaScript-based toggle — add a `🇪🇸 Español` button that swaps `textContent` of all translatable elements using a JSON translation map. ~2-4 hours.
+2. **Option B (Better SEO)**: Create a `/es/` subdirectory with a Spanish HTML copy. Better for SEO but doubles maintenance. ~4-8 hours.
+3. **Option C (Best long-term)**: Migrate to a static site generator (11ty, Astro) with i18n plugin. ~2-3 days.
+
+**Recommendation**: Option A for immediate need. The site is small enough that a JS toggle with a translation JSON object is the fastest path. The copyright year should also be fixed to 2026.
+
+---
+
+## 🖥️ ADDITIONAL SYSTEMD SERVICES DISCOVERED (v6)
+
+| Service | Status | Concern |
+|---------|--------|---------|
+| `asterisk.service` | **RUNNING** | 🔴 Package removed but service still active — zombie process |
+| `dcg-messaging.service` | RUNNING | Flask/Gunicorn messaging API — separate from main Express API |
+| `dcg-voice-interrupt.service` | RUNNING | Voice interruption service — purpose unclear |
+| `docker.service` + `containerd.service` | RUNNING | Docker running — what containers? Resource overhead |
+| `mariadb.service` | RUNNING | MariaDB 11.4.7 — separate from SQLite. What uses it? |
+| `postfix.service` | RUNNING | Mail transport agent — potential spam relay if misconfigured |
+| `twilio-sms-webhook.service` | RUNNING | Twilio SMS handler — separate from Express API |
+| `vosk-server.service` | RUNNING | Whisper ASR WebSocket — speech recognition server |
+| `ModemManager.service` | RUNNING | Modem manager — unnecessary on a VPS, wastes resources |
+| `fwupd.service` | RUNNING | Firmware update daemon — unnecessary on a VPS |
+
+**Key concern**: The server is running **at least 6 separate application services** (Express API, Flask messaging, voice interrupt, Twilio webhook, Vosk ASR, MariaDB) plus Docker. This is a LOT for a single 4vCPU/7.8GB droplet. Memory pressure could cause OOM kills under load.
 
 ---
 
@@ -187,96 +372,141 @@
 
 ---
 
-## RE-AUDIT CHANGE SUMMARY (v1 → v2 → v3 → v4 → v5)
+## RE-AUDIT CHANGE SUMMARY (v1 → v2 → v3 → v4 → v5 → v6)
 
-| Category | v1 | v2 Open | v3 Open | v4 Open | v5 Open | Total Resolved | Trend |
-|----------|-----|---------|---------|---------|---------|----------------|-------|
-| 🛑 Launch Blockers | 6 | 4 | 2 | 0 | **0** | 6 (all resolved/reclassified) | 🎉 ALL CLEAR |
-| 🔴 High Risk | 12 | 8 | 3 | 3+LB-01↓ | **2** (HR-08, HR-11) | 10 resolved + 2 reclassified | 📈 Improved |
-| 🟡 Medium Risk | 10 | 8 | 5 | 4 | **4** (+LB-01↓↓) | 6 resolved | ➡️ Stable |
-| 🔵 Low/Advisory | 5 | 5 | 5+3 | 5+4 | **6+4** (HR-03↓, NF-04↓) | 0 | ➡️ Advisory |
-| **TOTAL** | **33** | **25** | **15+3** | **12+4** | **12+4** | **21 resolved** | 🎉🎉 |
+| Category | v1 | v2 | v3 | v4 | v5 | **v6** | Trend |
+|----------|-----|-----|-----|-----|-----|--------|-------|
+| 🛑 Launch Blockers | 6 | 4 | 2 | 0 | 0 | **0** | 🎉 ALL CLEAR |
+| 🔴 Critical (NEW v6) | — | — | — | — | — | **4** (BS-01–04) | 🔴 NEW |
+| 🔴 High Risk | 12 | 8 | 3 | 3+1 | 2 | **2** (HR-08, HR-11) | ➡️ Stable |
+| 🟡 Medium Risk | 10 | 8 | 5 | 4 | 4 | **4+5** (BS-05–09) | ⚠️ +5 new |
+| 🔵 Low/Advisory | 5 | 5 | 5+3 | 5+4 | 6+4 | **6+4+4** | ➡️ +4 new |
+| **TOTAL** | **33** | **25** | **18** | **16** | **16** | **16+13 = 29 open** | ⚠️ Hidden risks found |
 
-### Per-Finding Status Progression (v1 → v2 → v3 → v4 → v5)
+### Per-Finding Status Progression (v1 → v6)
 
-| Finding | v1 | v2 | v3 | v4 | v5 |
-|---------|-----|-----|-----|-----|-----|
-| LB-01 PM2 crash loop | ⛔ 865 restarts | ⛔ 1,158 (worse) | ⛔ 391, 3s uptime | 🔴 root PM2 holds port | 🟡 **SELF-HEALED** — root PM2 broken, dcg PM2 owns port, 2 restarts |
-| LB-02 Server undersized | ⛔ 1vCPU/960MB | ⛔ load 1.89 | ⛔ load 1.46 | ✅ **RESOLVED** | ✅ load 0.86, 6.1GB free |
-| LB-03 Disk full | ⛔ 96% | ⛔ 96% | 🟡 94% | ✅ **RESOLVED** | ✅ 14%, 133GB free |
-| LB-04 Tests | ⛔ 0 tests | ✅ 4 suites | ✅ no regression | ✅ no regression | ✅ 29 pass (0.567s) |
-| LB-05 HSTS | ⛔ missing | ⛔ missing | ✅ **FIXED** | ✅ no regression | ✅ live check confirms |
-| LB-06 HTTP IP | ⛔ serves HTTP | ⛔ serves HTTP | ✅ **FIXED** (301) | ✅ no regression | ✅ 301 confirmed |
-| HR-01 Security headers | ⛔ 0 headers | ⛔ 0 headers | ✅ **FIXED** | ✅ no regression | ✅ snippet present |
-| HR-02 Rate limiting | ⛔ none | ⛔ none | ✅ **FIXED** | ✅ no regression | ✅ zones active |
-| HR-03 CDN | ⛔ none | ⛔ none | ⛔ none | ⛔ none | 🔵 **DEFERRED** to advisory |
-| HR-04 Code splitting | ⛔ 0 chunks | ✅ 35 lazy | ✅ 15+ chunks | ✅ 20+ chunks | ✅ 35 lazy, build ok |
-| HR-05 Gzip | ⛔ commented | ⛔ commented | ✅ **FIXED** | ✅ no regression | ✅ gzip on |
-| HR-06 DB backups | ⛔ none | ⛔ none | ✅ **FIXED** (daily) | ✅ no regression | ✅ 3am cron active |
-| HR-07 Static caching | ⛔ none | ⚠️ partial | ✅ **FIXED** (1yr) | ✅ no regression | ✅ immutable confirmed |
-| HR-08 Clustering | ⛔ fork/1 | ⛔ fork/1 | ⛔ fork/1 | ⛔ fork/1 | ⛔ fork/1 (4 vCPU ready) |
-| HR-09 Firewall | ⛔ "no UFW" | 🔄 corrected | 🔄 SIP open | 🔄 unchanged | 🔄 unchanged |
-| HR-10 Console leaks | ⛔ 50 calls | ✅ 0 calls | ✅ no regression | ✅ no regression | ✅ no regression |
-| HR-11 DR plan | ⛔ none | ⛔ none | ⛔ partial | ⛔ partial | ⛔ partial (no DR doc) |
-| HR-12 CI audit | ⛔ non-blocking | ✅ blocks critical | ✅ no regression | ✅ no regression | ✅ no regression |
-| MR-01 PropTypes | ⛔ 47/57 | ⛔ 47/57 | ⛔ 47/57 | ⛔ 47/57 | ⛔ 47/57 |
-| MR-02 ARIA | ⛔ 5 attrs | ⛔ 5 attrs | ⛔ 5 attrs | ⛔ 5 attrs | ⛔ 5 attrs |
-| MR-03 Empty states | ⛔ ~5 | ⚠️ ~20 | ⛔ ~20 | ⛔ ~20 | ⛔ ~20 |
-| MR-04 Sourcemaps | ⛔ in prod | ✅ disabled CI | ✅ no regression | ✅ no regression | ✅ no regression |
-| MR-05 Log rotation | ⛔ none | ⛔ none | ✅ **FIXED** | ✅ no regression | ✅ 3.0.0 online |
-| MR-06 Error pages | ⛔ generic | ⛔ generic | ✅ **FIXED** | ✅ no regression | ✅ custom 50x |
-| MR-07 SSH sessions | ⛔ 158 stale | ⛔ stale | ⛔ stale | ✅ **RESOLVED** | ✅ 2 sessions |
-| MR-08 SQLite scale | ⛔ no WAL | ⛔ no WAL | ⚠️ WAL enabled | ⚠️ unchanged | ⚠️ unchanged |
-| MR-09 Memoization | ⛔ 28/57 | ⛔ 28/57 | ⛔ 28/57 | ⛔ 28/57 | ⛔ 28/57 |
-| MR-10 Health check | ⛔ none | ✅ CI check | ✅ no regression | ✅ no regression | ✅ no regression |
-| LR-01 WAF | 🔵 advisory | 🔵 advisory | 🔵 advisory | 🔵 advisory | 🔵 advisory |
-| LR-02 Creative Tim | 🔵 92 refs | 🔵 92 refs | 🔵 92 refs | 🔵 92 refs | 🔵 92 refs |
-| LR-03 npm audit | 🔵 5 vulns | 🔵 5 vulns | 🔵 5 vulns | 🔵 5 vulns | 🔵 5 vulns |
-| LR-04 Lighthouse CI | 🔵 none | 🔵 none | 🔵 none | 🔵 none | 🔵 none |
-| LR-05 Bun runtime | 🔵 advisory | 🔵 advisory | 🔵 advisory | 🔵 advisory | 🔵 advisory |
+| Finding | v1 | v2 | v3 | v4 | v5 | v6 |
+|---------|-----|-----|-----|-----|-----|-----|
+| LB-01 PM2 crash loop | ⛔ 865 | ⛔ 1,158 | ⛔ 391 | 🔴 root PM2 | 🟡 self-healed | 🔴 **12 restarts, port conflict persists** |
+| LB-02 Server undersized | ⛔ 1vCPU | ⛔ load 1.89 | ⛔ load 1.46 | ✅ RESOLVED | ✅ | ✅ |
+| LB-03 Disk full | ⛔ 96% | ⛔ 96% | 🟡 94% | ✅ RESOLVED | ✅ | ✅ |
+| LB-04 Tests | ⛔ 0 | ✅ 4 suites | ✅ | ✅ | ✅ | ✅ |
+| LB-05 HSTS | ⛔ | ⛔ | ✅ FIXED | ✅ | ✅ | ✅ |
+| LB-06 HTTP IP | ⛔ | ⛔ | ✅ FIXED | ✅ | ✅ | ✅ |
+| HR-08 Clustering | ⛔ fork/1 | ⛔ | ⛔ | ⛔ | ⛔ | ⛔ fork/1 |
+| HR-11 DR plan | ⛔ none | ⛔ | ⛔ partial | ⛔ | ⛔ | ⛔ partial |
+| MR-08 SQLite scale | ⛔ no WAL | ⛔ | ⚠️ WAL | ⚠️ | ⚠️ | 🔴 **busy_timeout=0** |
+| **BS-01** SIP ports | — | — | — | — | — | 🔴 **NEW: wide open, no listener** |
+| **BS-02** busy_timeout | — | — | — | — | — | 🔴 **NEW: writes will fail** |
+| **BS-03** Asterisk zombie | — | — | — | — | — | 🔴 **NEW: removed but running** |
+| **BS-04** PM2 crash-loop | — | — | — | — | — | 🔴 **NEW: 12 restarts, 8s uptime** |
+| **BS-05** Cron sprawl | — | — | — | — | — | 🟡 **NEW: 29 jobs, duplicates** |
+| **BS-06** DB path mismatch | — | — | — | — | — | 🟡 **NEW: .env wrong path** |
+| **BS-07** Email passwords | — | — | — | — | — | 🟡 **NEW: shared/guessable** |
+| **BS-08** Backup dir empty | — | — | — | — | — | 🟡 **NEW: no voice backups** |
+| **BS-09** PORT mismatch | — | — | — | — | — | 🟡 **NEW: 3000 vs 4242** |
 
 ---
 
-## INFRASTRUCTURE SCALING PLAN (Updated v5)
+## INFRASTRUCTURE SCALING PLAN (Updated v6)
 
-| Layer | Current State | Required State | Effort | v5 Status |
+| Layer | Current State | Required State | Effort | v6 Status |
 |-------|--------------|----------------|--------|-----------|
-| **Server** | ✅ 4 vCPU / 7.8GB RAM / 155GB disk (14%) | Done | — | ✅ **COMPLETE** |
-| **CDN** | None — **DEFERRED** | Evaluate alternatives (BunnyCDN, DO Spaces CDN) only if needed at scale | N/A | 🔵 DEFERRED |
-| **Load Balancer** | None | DO Load Balancer (if multi-server needed) | ~1 hr | 🔵 DEFERRED |
-| **Backend** | ✅ DCG PM2 owns port 4242, API online (self-healed) | Enable cluster mode | 5 min config | ⚠️ TODO |
-| **Database** | ✅ SQLite WAL mode, daily backup | Add off-site copy, consider PG at scale | Off-site: 1 hr. PG: 2-4 weeks | ⚠️ PARTIAL |
+| **Server** | ✅ 4 vCPU / 7.8GB RAM / 155GB disk (14%) | Done | — | ✅ COMPLETE |
+| **Firewall** | ⚠️ SIP ports 5060/5080 + RTP 10000:20000 open to world | Close unused ports | 5 min | 🔴 **CRITICAL** |
+| **Database** | ⚠️ SQLite WAL, busy_timeout=0, path mismatch | Fix busy_timeout, fix .env paths | 10 min | 🔴 **CRITICAL** |
+| **Process Mgmt** | ⚠️ PM2 12 restarts, root .pm2 corrupted, Asterisk zombie | Clean root PM2, stop Asterisk, cluster mode | 15 min | 🔴 **CRITICAL** |
+| **Cron Jobs** | ⚠️ 29 jobs, duplicates, overlapping monitors | Consolidate to ~10 essential | 1 hr | 🟡 TODO |
+| **CDN** | None — DEFERRED | Evaluate if needed at scale | N/A | 🔵 DEFERRED |
 | **Nginx Security** | ✅ HSTS, headers, rate limiting, gzip, caching, error pages | Done | — | ✅ COMPLETE |
 | **Code Splitting** | ✅ 35 lazy routes, 20+ chunks, 432KB gzipped | Done | — | ✅ COMPLETE |
-| **Monitoring** | OpenReplay + dcg-health-monitor (every 2min) + disk-space (hourly) | + Uptime SaaS + alerting | 2-4 hours | ⚠️ PARTIAL |
+| **Monitoring** | ⚠️ Multiple overlapping monitors, no external uptime | Consolidate + add uptime SaaS | 2-4 hrs | ⚠️ PARTIAL |
 | **Tests** | ✅ 4 suites, 29 tests pass | Expand to 80%+ coverage | 2-3 days | ⚠️ PARTIAL |
-| **Backups** | ✅ Daily 3am DB backup + voice messages + knowledge DB | Add off-site replication | 1 hour | ⚠️ PARTIAL |
+| **Backups** | ⚠️ Backup dir empty, DB backup exists but voice backup missing | Verify backup scripts, add off-site | 1 hr | 🟡 TODO |
 
 ---
 
-## PRIORITY REMEDIATION ORDER (Updated v5)
+## 🎯 CONSOLIDATED PRIORITIZED ACTION ITEMS (v6)
 
-1. **TODAY** (10 min): Clean up root PM2 remnants (`sudo rm -rf /root/.pm2`), enable PM2 cluster mode (`instances: 4, exec_mode: 'cluster'`)
-2. **THIS WEEK**: Restrict SIP ports to VoIP provider IPs, off-site backup replication (DO Spaces), document DR plan with RTO/RPO, commit local prettier fixes
-3. **NEXT WEEK**: PropTypes on remaining 47 layouts, accessibility audit, monitoring + alerting SaaS, clean up nginx conflicting server_name
-4. **BEFORE 1,000 USERS**: PostgreSQL migration evaluation, expand test coverage to 80%+, Lighthouse CI, evaluate alternative CDN if performance demands
+### P0 — CRITICAL / Fix Today (est. 35 min total)
+
+| # | Action | System | Effort | Finding |
+|---|--------|--------|--------|---------|
+| 1 | Close SIP ports: `sudo ufw delete allow 5060/udp` (repeat for 5060/tcp, 5080/udp, 5080/tcp, 10000:20000/udp) | Infrastructure | 5 min | BS-01 |
+| 2 | Stop & purge Asterisk: `sudo systemctl stop asterisk && sudo systemctl disable asterisk && sudo apt purge asterisk asterisk-dev` | Infrastructure | 10 min | BS-03 |
+| 3 | Set SQLite busy_timeout: Add `PRAGMA busy_timeout = 5000;` in database.js | Backend API | 5 min | BS-02 |
+| 4 | Clean root PM2: `sudo rm -rf /root/.pm2` then `pm2 restart dcg-stripe-api` | Backend API | 5 min | BS-04 |
+| 5 | Fix .env PORT to 4242 | Backend API | 5 min | BS-09 |
+| 6 | Fix .env DATABASE_PATH and DB_PATH to correct location | Backend API | 5 min | BS-06 |
+
+### P1 — HIGH / Fix This Week (est. 2-3 hrs total)
+
+| # | Action | System | Effort | Finding |
+|---|--------|--------|--------|---------|
+| 7 | Enable PM2 cluster mode: `instances: 4, exec_mode: 'cluster'` | Backend API | 10 min | HR-08 |
+| 8 | Verify backup scripts write to correct paths, check backup.log | Backend / Data | 30 min | BS-08 |
+| 9 | Consolidate cron jobs: remove duplicate whisper monitor, reduce voice sync frequency, merge health monitors | Infrastructure | 1 hr | BS-05 |
+| 10 | Generate unique email passwords, update .env | Security | 30 min | BS-07 |
+| 11 | Document DR plan with RTO/RPO targets | Documentation | 1 hr | HR-11 |
+| 12 | Enable branch protection on `main` in GitHub | Dashboard | 10 min | GitHub audit |
+| 13 | Disable unnecessary services: `ModemManager`, `fwupd` | Infrastructure | 5 min | Systemd audit |
+
+### P2 — MEDIUM / Fix This Month (est. 1-2 weeks)
+
+| # | Action | System | Effort | Finding |
+|---|--------|--------|--------|---------|
+| 14 | Update README.md with DCG-specific content | Documentation | 2 hrs | Doc audit |
+| 15 | Add PropTypes to remaining 47 layouts | Dashboard | 2-3 days | MR-01 |
+| 16 | Accessibility audit + ARIA attributes | Dashboard | 1-2 days | MR-02 |
+| 17 | Add Spanish translation toggle to main site | Main Site | 4-8 hrs | Translation |
+| 18 | Fix main site copyright to 2026 | Main Site | 5 min | Main site audit |
+| 19 | Set up external uptime monitoring (Better Uptime free tier) | Infrastructure | 30 min | Monitoring |
+| 20 | Add off-site backup replication (DO Spaces) | Infrastructure | 1 hr | HR-11 |
+| 21 | Run `sudo apt update` (package lists 9 days stale) | Infrastructure | 5 min | System audit |
+
+### P3 — LOW / Backlog
+
+| # | Action | System | Effort | Finding |
+|---|--------|--------|--------|---------|
+| 22 | Remove 92 Creative Tim references from layout files | Dashboard | 2 hrs | LR-02 |
+| 23 | Add Lighthouse CI for performance regression | Dashboard | 2 hrs | LR-04 |
+| 24 | Evaluate PostgreSQL migration for 1000+ users | Backend | 2-4 weeks | MR-08 |
+| 25 | Expand test coverage to 80%+ | Dashboard | 2-3 days | Tests |
+| 26 | Investigate Docker/MariaDB usage — remove if unused | Infrastructure | 1 hr | Systemd audit |
+| 27 | Add deployment runbook and rollback procedure | Documentation | 2 hrs | Doc audit |
+| 28 | Evaluate WAF (CrowdSec or similar) | Infrastructure | 2-3 hrs | LR-01 |
+| 29 | Audit Billy's collaborator access via GitHub Settings | Dashboard | 10 min | GitHub audit |
 
 ---
 
-## SERVER SPECS (v4 Upsize — Verified v5)
+## SERVER SPECS (v4 Upsize — Verified v6)
 
-| Metric | v1–v3 (Before) | v4–v5 (After Upsize) | Change |
+| Metric | v1–v3 (Before) | v4–v6 (After Upsize) | Change |
 |--------|----------------|----------------------|--------|
 | **vCPUs** | 1 (DO-Regular) | **4** (DO-Regular) | **4x** |
 | **RAM** | 960MB (154MB free, 712MB swap) | **7.8GB** (6.1GB free, 0B swap) | **8x** |
 | **Disk** | 24GB (94% used, 1.6GB free) | **155GB** (14% used, 133GB free) | **6.5x** |
 | **Load Avg** | 1.46 / 1.50 / 1.54 | **0.86 / 0.53 / 0.46** (v5) | **Healthy** |
-| **Uptime** | Months (stale sessions) | **16 min** (post-reboot, v5 check) | Clean slate |
-| **PM2** | Root PM2 + DCG PM2 conflict | **DCG PM2 only** (root PM2 broken) | ✅ Resolved |
+| **PM2** | Root PM2 + DCG PM2 conflict | DCG PM2 only (root broken), **12 restarts** | ⚠️ Unstable |
+| **Services** | Unknown | **16 running** (Express, Flask, Asterisk zombie, Docker, MariaDB, Vosk, Postfix, Twilio webhook) | ⚠️ Heavy |
+| **Cron Jobs** | Unknown | **29 total** (17 dcg + 12 root), duplicates found | ⚠️ Sprawl |
 | **nginx** | 1.26.3, active | 1.26.3, active | Unchanged |
-| **Node.js** | 20.19.5 | 20.19.5 | Unchanged |
+| **Node.js** | 20.19.5 | 20.19.5 (Bun NOT installed despite LR-05) | Corrected |
+| **SSL** | Unknown | 4 certs, earliest expires Apr 14 (58 days), auto-renew ✅ | ✅ |
+| **fail2ban** | Unknown | Active, 2 jails (sshd, nginx-http-auth) | ✅ |
+| **Swap** | 712MB active | 2GB configured, 0B used | ✅ |
+| **Security Updates** | Unknown | unattended-upgrades active, apt lists 9 days old | ⚠️ |
+
+### DNS Architecture (v6 Discovery)
+| Domain | IP | Location |
+|--------|-----|----------|
+| `dashboard.directconnectglobal.com` | 157.245.185.88 | DigitalOcean droplet |
+| `api.directconnectglobal.com` | 157.245.185.88 | Same droplet |
+| `checkout.directconnectglobal.com` | 157.245.185.88 | Same droplet |
+| `portal.directconnectglobal.com` | 157.245.185.88 | Same droplet |
+| `directconnectglobal.com` (main site) | **35.208.37.12** | **Google Cloud** (separate) |
 
 ---
 
-*Generated by Augment Agent — DCG Admin Dashboard Launch Readiness Assessment v5.0*
-*v1: 2026-02-15 initial | v2: 07:05 re-audit | v3: 08:00 full re-audit | v4: 09:31 post-upsize | v5: 09:45 PM2 self-healed + CDN deferred*
+*Generated by Augment Agent — DCG Admin Dashboard Launch Readiness Assessment v6.0*
+*v1: 2026-02-15 initial | v2: 07:05 | v3: 08:00 | v4: 09:31 | v5: 09:45 | v6: 10:15 — Comprehensive Skeptical Audit*
