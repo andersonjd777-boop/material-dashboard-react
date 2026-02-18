@@ -32,6 +32,7 @@ import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
 
 import api from "services/api";
+import logger from "services/logger";
 
 function EmailHub() {
   // State
@@ -119,7 +120,7 @@ function EmailHub() {
       const res = await api.getEmailFolders(selectedInbox);
       setFolders(res.folders || []);
     } catch (err) {
-      console.error("Error fetching folders:", err);
+      logger.error("Error fetching folders:", err);
     }
   };
 
@@ -142,7 +143,7 @@ function EmailHub() {
         try {
           await api.saveFinalResponse(currentContextId, composeBody);
         } catch (err) {
-          console.error("Failed to save final response:", err);
+          logger.error("Failed to save final response:", err);
         }
       }
 

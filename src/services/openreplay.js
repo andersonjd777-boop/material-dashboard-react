@@ -6,7 +6,7 @@
  * debug user issues by recording and replaying user sessions.
  */
 
-/* eslint-disable no-console -- All console usage is guarded by isDev checks */
+import logger from "./logger";
 
 import Tracker from "@openreplay/tracker";
 
@@ -81,22 +81,22 @@ let isStarted = false;
  */
 export function initOpenReplay() {
   if (trackerInstance) {
-    if (isDev) console.warn("[OpenReplay] Tracker already initialized");
+    logger.warn("[OpenReplay] Tracker already initialized");
     return trackerInstance;
   }
 
   // Don't initialize if project key is not set
   if (OPENREPLAY_CONFIG.projectKey === "YOUR_PROJECT_KEY") {
-    if (isDev) console.warn("[OpenReplay] Project key not configured. Skipping initialization.");
+    logger.warn("[OpenReplay] Project key not configured. Skipping initialization.");
     return null;
   }
 
   try {
     trackerInstance = new Tracker(OPENREPLAY_CONFIG);
-    if (isDev) console.log("[OpenReplay] Tracker initialized");
+    logger.log("[OpenReplay] Tracker initialized");
     return trackerInstance;
   } catch (error) {
-    if (isDev) console.error("[OpenReplay] Failed to initialize tracker:", error);
+    logger.error("[OpenReplay] Failed to initialize tracker:", error);
     return null;
   }
 }
@@ -107,12 +107,12 @@ export function initOpenReplay() {
  */
 export async function startSession(userInfo = {}) {
   if (!trackerInstance) {
-    if (isDev) console.warn("[OpenReplay] Tracker not initialized");
+    logger.warn("[OpenReplay] Tracker not initialized");
     return false;
   }
 
   if (isStarted) {
-    if (isDev) console.warn("[OpenReplay] Session already started");
+    logger.warn("[OpenReplay] Session already started");
     return true;
   }
 
@@ -129,10 +129,10 @@ export async function startSession(userInfo = {}) {
     });
     isStarted = true;
     if (isDev)
-      console.log("[OpenReplay] Session started", userInfo.email ? `for ${userInfo.email}` : "");
+      logger.log("[OpenReplay] Session started", userInfo.email ? `for ${userInfo.email}` : "");
     return true;
   } catch (error) {
-    if (isDev) console.error("[OpenReplay] Failed to start session:", error);
+    logger.error("[OpenReplay] Failed to start session:", error);
     return false;
   }
 }
@@ -148,9 +148,9 @@ export function identifyUser(user) {
     trackerInstance.setMetadata("userName", user.name || "Unknown");
     trackerInstance.setMetadata("userRole", user.role || "user");
     trackerInstance.setMetadata("userId", user.id || "unknown");
-    if (isDev) console.log("[OpenReplay] User identified:", user.email);
+    logger.log("[OpenReplay] User identified:", user.email);
   } catch (error) {
-    if (isDev) console.error("[OpenReplay] Failed to identify user:", error);
+    logger.error("[OpenReplay] Failed to identify user:", error);
   }
 }
 
@@ -162,9 +162,9 @@ export function clearUser() {
 
   try {
     trackerInstance.setUserID(null);
-    if (isDev) console.log("[OpenReplay] User cleared");
+    logger.log("[OpenReplay] User cleared");
   } catch (error) {
-    if (isDev) console.error("[OpenReplay] Failed to clear user:", error);
+    logger.error("[OpenReplay] Failed to clear user:", error);
   }
 }
 
@@ -177,7 +177,7 @@ export function trackEvent(name, payload = {}) {
   try {
     trackerInstance.event(name, payload);
   } catch (error) {
-    if (isDev) console.error("[OpenReplay] Failed to track event:", error);
+    logger.error("[OpenReplay] Failed to track event:", error);
   }
 }
 
@@ -190,7 +190,7 @@ export function trackError(error, metadata = {}) {
   try {
     trackerInstance.handleError(error, metadata);
   } catch (err) {
-    if (isDev) console.error("[OpenReplay] Failed to track error:", err);
+    logger.error("[OpenReplay] Failed to track error:", err);
   }
 }
 

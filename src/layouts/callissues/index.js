@@ -18,6 +18,7 @@ import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
 import MDButton from "components/MDButton";
 import api from "services/api";
+import logger from "services/logger";
 
 const SEVERITY_COLORS = {
   critical: "error",
@@ -56,7 +57,7 @@ function CallIssues() {
       setStats(statsRes?.stats || null);
       setIssues(issuesRes?.issues || []);
     } catch (error) {
-      console.error("Failed to fetch call issues:", error);
+      logger.error("Failed to fetch call issues:", error);
     }
     setLoading(false);
   }, [hoursFilter, categoryFilter]);
@@ -76,7 +77,7 @@ function CallIssues() {
       await api.resolveCallIssue(id);
       fetchData();
     } catch (e) {
-      console.error(e);
+      logger.error(e);
     }
   };
 

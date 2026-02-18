@@ -38,6 +38,7 @@ import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
 import MDButton from "components/MDButton";
 import api from "services/api";
+import logger from "services/logger";
 
 function SharedDrive() {
   const [files, setFiles] = useState([]);
@@ -128,7 +129,7 @@ function SharedDrive() {
       setFiles(response.files || []);
       setFolders(response.folders || []);
     } catch (error) {
-      console.error("Failed to fetch files:", error);
+      logger.error("Failed to fetch files:", error);
     }
     setLoading(false);
   }, [currentPath]);
@@ -161,7 +162,7 @@ function SharedDrive() {
       setNewFolderName("");
       fetchFiles();
     } catch (error) {
-      console.error("Failed to create folder:", error);
+      logger.error("Failed to create folder:", error);
       alert("Failed to create folder: " + (error.response?.data?.error || error.message));
     }
   };
@@ -174,7 +175,7 @@ function SharedDrive() {
       await api.uploadSharedDriveFile(file, currentPath);
       fetchFiles();
     } catch (error) {
-      console.error("Failed to upload file:", error);
+      logger.error("Failed to upload file:", error);
       alert("Failed to upload file: " + (error.response?.data?.error || error.message));
     }
     setUploading(false);
@@ -185,7 +186,7 @@ function SharedDrive() {
     try {
       await api.downloadSharedDriveFile(filePath, false);
     } catch (error) {
-      console.error("Failed to download file:", error);
+      logger.error("Failed to download file:", error);
       alert("Failed to download file: " + (error.message || "Unknown error"));
     }
   };
@@ -194,7 +195,7 @@ function SharedDrive() {
     try {
       await api.downloadSharedDriveFile(filePath, true);
     } catch (error) {
-      console.error("Failed to view file:", error);
+      logger.error("Failed to view file:", error);
       alert("Failed to view file: " + (error.message || "Unknown error"));
     }
   };
@@ -206,7 +207,7 @@ function SharedDrive() {
       await api.deleteSharedDriveItem(path);
       fetchFiles();
     } catch (error) {
-      console.error("Failed to delete:", error);
+      logger.error("Failed to delete:", error);
       alert("Failed to delete: " + (error.response?.data?.error || error.message));
     }
   };

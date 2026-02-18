@@ -28,6 +28,7 @@ import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
 
 import api from "services/api";
+import logger from "services/logger";
 
 const CATEGORIES = [
   { value: "api_keys", label: "API Keys", color: "info" },
@@ -65,7 +66,7 @@ function Secrets() {
       const res = await api.getSecrets();
       setSecrets(res.secrets || []);
     } catch (err) {
-      console.error("Failed to fetch secrets:", err);
+      logger.error("Failed to fetch secrets:", err);
     } finally {
       setLoading(false);
     }
@@ -80,7 +81,7 @@ function Secrets() {
       setFormData({ key: "", value: "", category: "general", description: "" });
       fetchSecrets();
     } catch (err) {
-      console.error("Failed to save secret:", err);
+      logger.error("Failed to save secret:", err);
     } finally {
       setSaving(false);
     }
@@ -92,7 +93,7 @@ function Secrets() {
       await api.deleteSecret(key);
       fetchSecrets();
     } catch (err) {
-      console.error("Failed to delete:", err);
+      logger.error("Failed to delete:", err);
     }
   };
 
@@ -123,7 +124,7 @@ function Secrets() {
         }, 30000);
       }
     } catch (err) {
-      console.error("Failed to reveal secret:", err);
+      logger.error("Failed to reveal secret:", err);
     }
   };
 
@@ -139,7 +140,7 @@ function Secrets() {
           setTimeout(() => setCopySuccess(null), 2000);
         }
       } catch (err) {
-        console.error("Failed to copy:", err);
+        logger.error("Failed to copy:", err);
       }
     } else {
       await navigator.clipboard.writeText(value);

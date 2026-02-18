@@ -14,6 +14,7 @@ import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
 import api from "services/api";
+import logger from "services/logger";
 import {
   Dialog,
   DialogTitle,
@@ -61,7 +62,7 @@ function TaskManagement() {
       const response = await api.getTasks(params);
       setTasks(response.tasks || []);
     } catch (error) {
-      console.error("Error loading tasks:", error);
+      logger.error("Error loading tasks:", error);
     } finally {
       setLoading(false);
     }
@@ -107,7 +108,7 @@ function TaskManagement() {
       handleCloseDialog();
       loadTasks();
     } catch (error) {
-      console.error("Error saving task:", error);
+      logger.error("Error saving task:", error);
       alert("Failed to save task");
     }
   };
@@ -118,7 +119,7 @@ function TaskManagement() {
       await api.deleteTask(taskId);
       loadTasks();
     } catch (error) {
-      console.error("Error deleting task:", error);
+      logger.error("Error deleting task:", error);
       alert("Failed to delete task");
     }
   };
@@ -128,7 +129,7 @@ function TaskManagement() {
       await api.completeTask(taskId);
       loadTasks();
     } catch (error) {
-      console.error("Error completing task:", error);
+      logger.error("Error completing task:", error);
       alert("Failed to complete task");
     }
   };

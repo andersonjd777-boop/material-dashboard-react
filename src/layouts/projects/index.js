@@ -27,6 +27,7 @@ import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
 
 import api from "services/api";
+import logger from "services/logger";
 
 const PRIORITY_COLORS = { high: "error", medium: "warning", low: "info" };
 const STATUS_COLORS = {
@@ -58,7 +59,7 @@ function Projects() {
       const res = await api.getProjects();
       setProjects(res.projects || []);
     } catch (err) {
-      console.error("Failed to fetch projects:", err);
+      logger.error("Failed to fetch projects:", err);
     } finally {
       setLoading(false);
     }
@@ -73,7 +74,7 @@ function Projects() {
       await api.updateProject(projectId, { milestones: updatedMilestones });
       fetchProjects();
     } catch (err) {
-      console.error("Failed to update:", err);
+      logger.error("Failed to update:", err);
     }
   };
 
@@ -109,7 +110,7 @@ function Projects() {
       handleCloseDialog();
       fetchProjects();
     } catch (error) {
-      console.error("Error creating project:", error);
+      logger.error("Error creating project:", error);
       alert("Failed to create project: " + (error.response?.data?.error || error.message));
     }
   };

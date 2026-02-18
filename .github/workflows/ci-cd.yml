@@ -41,11 +41,15 @@ jobs:
       - name: Lint
         run: npx eslint src/ --max-warnings 0
 
-      - name: Security audit
+      - name: Security audit (critical — blocks build)
+        run: npm audit --audit-level=critical
+
+      - name: Security audit (high — advisory)
         run: npm audit --audit-level=high || true
+        continue-on-error: true
 
       - name: Run tests
-        run: npm test -- --watchAll=false --passWithNoTests
+        run: npm test -- --watchAll=false
 
   # ── Build ────────────────────────────────────────────────
   build:

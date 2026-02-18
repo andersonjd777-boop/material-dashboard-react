@@ -5,6 +5,7 @@
  */
 
 import axios from "axios";
+import logger from "./logger";
 import { ApiEvents } from "./openreplayEvents";
 
 // API base URL - configured via environment variable, defaults to relative path
@@ -74,12 +75,15 @@ class ApiService {
         ApiEvents.requestError(method, url, error, status);
 
         if (error.response?.status === 401) {
+          // Clear stored auth data — ProtectedRoute will handle the redirect
+          // NOTE: Do NOT use window.location.href here, it causes a full page
+          // reload which produces the "auth flash" bug (dashboard briefly visible
+          // before redirect). React's ProtectedRoute handles this cleanly.
           localStorage.removeItem("dcg_admin_token");
           localStorage.removeItem("dcg_admin_user");
           localStorage.removeItem("dcg_admin_remember");
           sessionStorage.removeItem("dcg_admin_token");
           sessionStorage.removeItem("dcg_admin_user");
-          window.location.href = "/authentication/sign-in";
         }
         return Promise.reject(error);
       }
@@ -405,7 +409,7 @@ class ApiService {
         window.URL.revokeObjectURL(blobUrl);
       }
     } catch (error) {
-      console.error("Download error:", error);
+      logger.error("Download error:", error);
       throw error;
     }
   }
@@ -637,7 +641,7 @@ class ApiService {
       window.URL.revokeObjectURL(downloadUrl);
       return response;
     } catch (error) {
-      console.error("Download attachment failed:", error);
+      logger.error("Download attachment failed:", error);
       throw error;
     }
   }
@@ -667,7 +671,7 @@ class ApiService {
       window.URL.revokeObjectURL(downloadUrl);
       return response;
     } catch (error) {
-      console.error("Export conversation failed:", error);
+      logger.error("Export conversation failed:", error);
       throw error;
     }
   }

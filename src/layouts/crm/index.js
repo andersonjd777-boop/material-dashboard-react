@@ -13,6 +13,7 @@ import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
 import api from "services/api";
+import logger from "services/logger";
 import {
   Dialog,
   DialogTitle,
@@ -75,7 +76,7 @@ function CRMDashboard() {
       const response = await api.getCrmCustomers(params);
       setCustomers(response.customers || []);
     } catch (error) {
-      console.error("Error loading customers:", error);
+      logger.error("Error loading customers:", error);
     } finally {
       setLoading(false);
     }
@@ -86,7 +87,7 @@ function CRMDashboard() {
       const response = await api.getCrmAnalytics();
       setAnalytics(response.analytics);
     } catch (error) {
-      console.error("Error loading analytics:", error);
+      logger.error("Error loading analytics:", error);
     }
   };
 
@@ -133,7 +134,7 @@ function CRMDashboard() {
       loadCustomers();
       loadAnalytics();
     } catch (error) {
-      console.error("Error saving customer:", error);
+      logger.error("Error saving customer:", error);
       alert("Failed to save customer");
     }
   };

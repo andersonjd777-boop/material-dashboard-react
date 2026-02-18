@@ -5,6 +5,7 @@
 
 import React, { Component } from "react";
 import PropTypes from "prop-types";
+import logger from "services/logger";
 import Card from "@mui/material/Card";
 import Button from "@mui/material/Button";
 import Icon from "@mui/material/Icon";
@@ -52,8 +53,8 @@ class ErrorBoundary extends Component {
 
     // Log to console in development
     if (process.env.NODE_ENV === "development") {
-      console.error("[ErrorBoundary] Caught error:", error);
-      console.error("[ErrorBoundary] Component stack:", errorInfo.componentStack);
+      logger.error("[ErrorBoundary] Caught error:", error);
+      logger.error("[ErrorBoundary] Component stack:", errorInfo.componentStack);
     }
 
     // Call optional onError callback

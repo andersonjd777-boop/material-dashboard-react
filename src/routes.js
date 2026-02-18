@@ -2,47 +2,52 @@
  * DCG Admin Dashboard - Routes (Reorganized)
  * Navigation configuration for Direct Connect Global admin panel
  * Categorized structure with collapsible sections
+ *
+ * All layout imports use React.lazy() for code splitting.
+ * Each route loads its chunk on demand, reducing initial bundle size.
  */
 
-// Material Dashboard 2 React layouts
-import Dashboard from "layouts/dashboard";
-import Secrets from "layouts/secrets";
-import Projects from "layouts/projects";
-import System from "layouts/system";
-import Actions from "layouts/actions";
-import Assistant from "layouts/assistant";
-import Flagging from "layouts/flagging";
-import CallLogs from "layouts/calllogs";
-import CallIssues from "layouts/callissues";
-import VoiceMessages from "layouts/voicemessages";
-import Messages from "layouts/messages";
-import SharedDrive from "layouts/shareddrive";
-import EmailHub from "layouts/email";
-import Billing from "layouts/billing";
-import Profile from "layouts/profile";
-import SignIn from "layouts/authentication/sign-in";
-import TaskManagement from "layouts/taskmanagement";
-import GanttTimeline from "layouts/gantt";
-import CRMDashboard from "layouts/crm";
-import AutoHealer from "layouts/autohealer";
-import AutoDeveloper from "layouts/autodeveloper";
-import ComplianceOfficer from "layouts/compliance";
-import AugmentControl from "layouts/augment";
-import GapChecker from "layouts/gapchecker";
-import AntiRegression from "layouts/antiregression";
-import WorkCalendar from "layouts/workCalendar";
-import CompanyCalendar from "layouts/companycalendar";
+import { lazy } from "react";
 
-// AI Workforce Layouts
-import JenkinsTab from "layouts/ai-workforce/jenkins";
-import VigilTab from "layouts/ai-workforce/vigil";
-import LedgerTab from "layouts/ai-workforce/ledger";
-import BellTab from "layouts/ai-workforce/bell";
-import WardenTab from "layouts/ai-workforce/warden";
-import ScribeTab from "layouts/ai-workforce/scribe";
-import IrisTab from "layouts/ai-workforce/iris";
+// Lazy-loaded layouts — each becomes a separate webpack chunk
+const Dashboard = lazy(() => import("layouts/dashboard"));
+const Secrets = lazy(() => import("layouts/secrets"));
+const Projects = lazy(() => import("layouts/projects"));
+const System = lazy(() => import("layouts/system"));
+const Actions = lazy(() => import("layouts/actions"));
+const Assistant = lazy(() => import("layouts/assistant"));
+const Flagging = lazy(() => import("layouts/flagging"));
+const CallLogs = lazy(() => import("layouts/calllogs"));
+const CallIssues = lazy(() => import("layouts/callissues"));
+const VoiceMessages = lazy(() => import("layouts/voicemessages"));
+const Messages = lazy(() => import("layouts/messages"));
+const SharedDrive = lazy(() => import("layouts/shareddrive"));
+const EmailHub = lazy(() => import("layouts/email"));
+const Billing = lazy(() => import("layouts/billing"));
+const Profile = lazy(() => import("layouts/profile"));
+const SignIn = lazy(() => import("layouts/authentication/sign-in"));
+const TaskManagement = lazy(() => import("layouts/taskmanagement"));
+const GanttTimeline = lazy(() => import("layouts/gantt"));
+const CRMDashboard = lazy(() => import("layouts/crm"));
+const AutoHealer = lazy(() => import("layouts/autohealer"));
+const AutoDeveloper = lazy(() => import("layouts/autodeveloper"));
+const ComplianceOfficer = lazy(() => import("layouts/compliance"));
+const AugmentControl = lazy(() => import("layouts/augment"));
+const GapChecker = lazy(() => import("layouts/gapchecker"));
+const AntiRegression = lazy(() => import("layouts/antiregression"));
+const WorkCalendar = lazy(() => import("layouts/workCalendar"));
+const CompanyCalendar = lazy(() => import("layouts/companycalendar"));
 
-// @mui icons
+// AI Workforce Layouts — lazy loaded
+const JenkinsTab = lazy(() => import("layouts/ai-workforce/jenkins"));
+const VigilTab = lazy(() => import("layouts/ai-workforce/vigil"));
+const LedgerTab = lazy(() => import("layouts/ai-workforce/ledger"));
+const BellTab = lazy(() => import("layouts/ai-workforce/bell"));
+const WardenTab = lazy(() => import("layouts/ai-workforce/warden"));
+const ScribeTab = lazy(() => import("layouts/ai-workforce/scribe"));
+const IrisTab = lazy(() => import("layouts/ai-workforce/iris"));
+
+// @mui icons — eagerly loaded (shared across all routes)
 import Icon from "@mui/material/Icon";
 
 const routes = [
@@ -182,7 +187,7 @@ const routes = [
   },
   {
     type: "collapse",
-    name: "Work Calendar",
+    name: "DCG Calendar",
     key: "work-calendar",
     icon: <Icon fontSize="small">calendar_today</Icon>, // Use calendar icon
     route: "/work-calendar",

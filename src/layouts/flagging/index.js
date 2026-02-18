@@ -25,6 +25,7 @@ import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
 import MDButton from "components/MDButton";
 import api from "services/api";
+import logger from "services/logger";
 
 function Flagging() {
   const [flags, setFlags] = useState([]);
@@ -37,7 +38,7 @@ function Flagging() {
       const response = await api.getFlaggedContent(filter);
       setFlags(response.data?.flags || []);
     } catch (error) {
-      console.error("Failed to fetch flags:", error);
+      logger.error("Failed to fetch flags:", error);
     }
     setLoading(false);
   }, [filter]);
@@ -51,7 +52,7 @@ function Flagging() {
       await api.resolveFlaggedContent(flagId);
       fetchFlags();
     } catch (error) {
-      console.error("Failed to resolve flag:", error);
+      logger.error("Failed to resolve flag:", error);
     }
   };
 

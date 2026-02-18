@@ -19,6 +19,7 @@ import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
 import MDButton from "components/MDButton";
 import api from "services/api";
+import logger from "services/logger";
 
 function CallLogs() {
   const [calls, setCalls] = useState([]);
@@ -33,7 +34,7 @@ function CallLogs() {
       const response = await api.getCallLogs(daysFilter);
       setCalls(response?.calls || []);
     } catch (error) {
-      console.error("Failed to fetch call logs:", error);
+      logger.error("Failed to fetch call logs:", error);
     }
     setLoading(false);
   }, [daysFilter]);

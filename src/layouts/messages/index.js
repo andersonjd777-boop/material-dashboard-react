@@ -34,6 +34,7 @@ import MDButton from "components/MDButton";
 import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import api from "services/api";
+import logger from "services/logger";
 
 function Messages() {
   // State
@@ -93,7 +94,7 @@ function Messages() {
       const res = await api.getMessageThreads();
       setThreads(res.threads || []);
     } catch (err) {
-      console.error("Error fetching threads:", err);
+      logger.error("Error fetching threads:", err);
     } finally {
       setLoading(false);
     }
@@ -105,7 +106,7 @@ function Messages() {
       const res = await api.getThreadMessages(connectionId);
       setMessages(res.messages || []);
     } catch (err) {
-      console.error("Error fetching messages:", err);
+      logger.error("Error fetching messages:", err);
     } finally {
       setLoadingMessages(false);
     }
@@ -116,7 +117,7 @@ function Messages() {
       const res = await api.getMessageStats();
       setStats(res.stats);
     } catch (err) {
-      console.error("Error fetching stats:", err);
+      logger.error("Error fetching stats:", err);
     }
   };
 
@@ -139,7 +140,7 @@ function Messages() {
       await fetchMessages(selectedThread.connection_id);
       await fetchThreads(); // Refresh thread list to update last_message_at
     } catch (err) {
-      console.error("Error sending message:", err);
+      logger.error("Error sending message:", err);
       alert("Failed to send message");
     } finally {
       setSending(false);
@@ -181,7 +182,7 @@ function Messages() {
       if (fileInputRef.current) fileInputRef.current.value = "";
       alert("Attachment uploaded successfully!");
     } catch (err) {
-      console.error("Error uploading attachment:", err);
+      logger.error("Error uploading attachment:", err);
       alert("Failed to upload attachment");
     } finally {
       setUploading(false);
@@ -200,7 +201,7 @@ function Messages() {
       setPreferences(res.preferences);
       setPreferencesOpen(true);
     } catch (err) {
-      console.error("Error loading preferences:", err);
+      logger.error("Error loading preferences:", err);
       alert("Failed to load notification preferences");
     }
   };
@@ -211,7 +212,7 @@ function Messages() {
       setPreferencesOpen(false);
       alert("Preferences saved successfully!");
     } catch (err) {
-      console.error("Error saving preferences:", err);
+      logger.error("Error saving preferences:", err);
       alert("Failed to save preferences");
     }
   };
@@ -240,7 +241,7 @@ function Messages() {
         const res = await api.searchInmates(inmateSearch);
         setInmateResults(res.inmates || []);
       } catch (err) {
-        console.error("Error searching inmates:", err);
+        logger.error("Error searching inmates:", err);
       } finally {
         setSearchingInmates(false);
       }
@@ -276,7 +277,7 @@ function Messages() {
         alert("Thread created successfully!");
       }
     } catch (err) {
-      console.error("Error creating thread:", err);
+      logger.error("Error creating thread:", err);
       alert("Failed to create thread: " + (err.response?.data?.error || err.message));
     } finally {
       setCreatingThread(false);

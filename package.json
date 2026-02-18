@@ -46,6 +46,11 @@
       "react-app/jest"
     ]
   },
+  "jest": {
+    "moduleNameMapper": {
+      "^react-router-dom$": "<rootDir>/node_modules/react-router-dom/dist/index.js"
+    }
+  },
   "browserslist": {
     "production": [
       ">0.2%",
@@ -59,6 +64,10 @@
     ]
   },
   "devDependencies": {
+    "@testing-library/dom": "^10.4.1",
+    "@testing-library/jest-dom": "^6.9.1",
+    "@testing-library/react": "^16.3.2",
+    "@testing-library/user-event": "^14.6.1",
     "ajv": "^7.2.4",
     "eslint": "8.39.0",
     "eslint-config-prettier": "8.8.0",

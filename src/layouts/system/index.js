@@ -19,6 +19,7 @@ import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
 
 import api from "services/api";
+import logger from "services/logger";
 
 function System() {
   const [loading, setLoading] = useState(true);
@@ -47,7 +48,7 @@ function System() {
       setPm2(p?.data || []);
       setAsterisk(a?.data);
     } catch (err) {
-      console.error(err);
+      logger.error(err);
     } finally {
       setLoading(false);
       setRefreshing(false);

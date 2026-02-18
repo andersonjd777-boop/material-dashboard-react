@@ -13,6 +13,7 @@ import DashboardLayout from "examples/LayoutContainers/DashboardLayout";
 import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
 import api from "services/api";
+import logger from "services/logger";
 import {
   Dialog,
   DialogTitle,
@@ -65,7 +66,7 @@ function GanttTimeline() {
       const response = await api.getTimelineProjects();
       setProjects(response.projects || []);
     } catch (error) {
-      console.error("Error loading projects:", error);
+      logger.error("Error loading projects:", error);
     } finally {
       setLoading(false);
     }
@@ -117,7 +118,7 @@ function GanttTimeline() {
       handleCloseDialog();
       loadProjects();
     } catch (error) {
-      console.error("Error saving project:", error);
+      logger.error("Error saving project:", error);
       alert("Failed to save project");
     }
   };
@@ -128,7 +129,7 @@ function GanttTimeline() {
       await api.deleteTimelineProject(projectId);
       loadProjects();
     } catch (error) {
-      console.error("Error deleting project:", error);
+      logger.error("Error deleting project:", error);
       alert("Failed to delete project");
     }
   };

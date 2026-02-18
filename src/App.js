@@ -4,7 +4,7 @@
  * Includes OpenReplay page view tracking
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, Suspense } from "react";
 
 // react-router components
 import { Routes, Route, Navigate, useLocation } from "react-router-dom";
@@ -13,6 +13,7 @@ import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import { ThemeProvider } from "@mui/material/styles";
 import CssBaseline from "@mui/material/CssBaseline";
 import Icon from "@mui/material/Icon";
+import CircularProgress from "@mui/material/CircularProgress";
 
 // Material Dashboard 2 React components
 import MDBox from "components/MDBox";
@@ -147,10 +148,18 @@ export default function App() {
             onMouseLeave={handleOnMouseLeave}
           />
         )}
-        <Routes>
-          {getRoutes(routes)}
-          <Route path="*" element={<Navigate to="/dashboard" />} />
-        </Routes>
+        <Suspense
+          fallback={
+            <MDBox display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+              <CircularProgress size={60} />
+            </MDBox>
+          }
+        >
+          <Routes>
+            {getRoutes(routes)}
+            <Route path="*" element={<Navigate to="/dashboard" />} />
+          </Routes>
+        </Suspense>
       </ThemeProvider>
     </CacheProvider>
   ) : (
@@ -166,10 +175,18 @@ export default function App() {
           onMouseLeave={handleOnMouseLeave}
         />
       )}
-      <Routes>
-        {getRoutes(routes)}
-        <Route path="*" element={<Navigate to="/dashboard" />} />
-      </Routes>
+      <Suspense
+        fallback={
+          <MDBox display="flex" justifyContent="center" alignItems="center" minHeight="100vh">
+            <CircularProgress size={60} />
+          </MDBox>
+        }
+      >
+        <Routes>
+          {getRoutes(routes)}
+          <Route path="*" element={<Navigate to="/dashboard" />} />
+        </Routes>
+      </Suspense>
     </ThemeProvider>
   );
 }

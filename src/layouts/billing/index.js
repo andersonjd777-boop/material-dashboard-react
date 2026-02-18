@@ -14,6 +14,7 @@ import Footer from "examples/Footer";
 import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
 import api from "services/api";
+import logger from "services/logger";
 
 // Plan colors for visual variety
 const PLAN_COLORS = ["secondary", "info", "success", "warning", "primary", "error"];
@@ -108,7 +109,7 @@ function Billing() {
           setPlans(response.plans);
         }
       } catch (err) {
-        console.error("Error loading subscription plans:", err);
+        logger.error("Error loading subscription plans:", err);
         setError(err.message);
       } finally {
         setLoading(false);

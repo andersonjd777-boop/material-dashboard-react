@@ -11,6 +11,7 @@
 import { useState, useEffect } from "react";
 import PropTypes from "prop-types";
 import api from "services/api";
+import logger from "services/logger";
 import Grid from "@mui/material/Grid";
 import Card from "@mui/material/Card";
 import Icon from "@mui/material/Icon";
@@ -111,7 +112,7 @@ function AugmentControl() {
       });
       setLoading(false);
     } catch (error) {
-      console.error("Error fetching system status:", error);
+      logger.error("Error fetching system status:", error);
       setLoading(false);
     }
   };

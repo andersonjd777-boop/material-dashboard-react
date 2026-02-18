@@ -19,6 +19,7 @@ import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
 
 import api from "services/api";
+import logger from "services/logger";
 import { useState, useEffect } from "react";
 
 function WorkCalendar() {
@@ -35,7 +36,7 @@ function WorkCalendar() {
       const response = await api.getWorkCalendarDates();
       setDates(response.dates || []);
     } catch (error) {
-      console.error("Failed to fetch calendar dates:", error);
+      logger.error("Failed to fetch calendar dates:", error);
       // Fallback to empty array on error
       setDates([]);
     } finally {
@@ -49,7 +50,7 @@ function WorkCalendar() {
       const response = await api.getWorkCalendarDate(date);
       setDateDetails(response);
     } catch (error) {
-      console.error("Failed to fetch date details:", error);
+      logger.error("Failed to fetch date details:", error);
     }
   };
 
@@ -61,7 +62,7 @@ function WorkCalendar() {
       // Refetch dates after sync
       await fetchDates();
     } catch (error) {
-      console.error("Sync failed:", error);
+      logger.error("Sync failed:", error);
     } finally {
       setSyncing(false);
     }

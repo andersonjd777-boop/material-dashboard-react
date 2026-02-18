@@ -25,6 +25,7 @@ import DashboardNavbar from "examples/Navbars/DashboardNavbar";
 import Footer from "examples/Footer";
 
 import api from "services/api";
+import logger from "services/logger";
 
 function Actions() {
   const [loading, setLoading] = useState({});
@@ -48,7 +49,7 @@ function Actions() {
       ]);
       setServiceStatus({ whisper, asterisk, pm2 });
     } catch (err) {
-      console.error(err);
+      logger.error(err);
     }
   };
 
@@ -57,7 +58,7 @@ function Actions() {
       const data = await api.getStorageInfo();
       setStorageInfo(data);
     } catch (err) {
-      console.error(err);
+      logger.error(err);
     }
   };
 

@@ -21,6 +21,9 @@ import ErrorBoundary from "components/ErrorBoundary";
 // OpenReplay for session replay and error tracking
 import { initOpenReplay, startSession } from "services/openreplay";
 
+// Centralized logger
+import logger from "services/logger";
+
 // Initialize OpenReplay tracker before rendering
 // This ensures all user interactions are captured from the start
 try {
@@ -47,7 +50,7 @@ try {
     }
   }
 } catch (error) {
-  console.error("[OpenReplay] Failed to initialize:", error);
+  logger.error("[OpenReplay] Failed to initialize:", error);
   // App continues to work even if OpenReplay fails
 }
 

@@ -1,7 +1,9 @@
 /**
  * DCG Admin Dashboard - Authentication Context
  * Manages user authentication state and JWT tokens
+ * Supports: Email+Password (IMAP), Google OAuth, Email Code (OTP)
  * Includes OpenReplay integration for user identification
+ * Features: token expiry check, Remember Me, idle timeout
  */
 
 import {
@@ -131,47 +133,124 @@ export function AuthProvider({ children }) {
     };
   }, [user, logout]);
 
-  const login = useCallback(async (email, password, rememberMe = false) => {
+  // Helper: store auth result (supports Remember Me)
+  const handleAuthSuccess = useCallback((response, rememberMe = true) => {
+    const { token, user: userData } = response;
+
+    // Store Remember Me preference
+    localStorage.setItem(STORAGE_KEYS.REMEMBER, String(rememberMe));
+
+    // Store in appropriate storage
+    const storage = rememberMe ? localStorage : sessionStorage;
+    storage.setItem(STORAGE_KEYS.TOKEN, token);
+    storage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
+
+    api.setToken(token);
+    setUser(userData);
+    identifyUser(userData);
+    AuthEvents.loginSuccess(userData);
+    return { success: true };
+  }, []);
+
+  // Login method 1: Email + Password (IMAP SSO)
+  const login = useCallback(
+    async (email, password, rememberMe = false) => {
+      try {
+        setError(null);
+        setLoading(true);
+
+        AuthEvents.loginAttempt(email);
+
+        const response = await api.post("/admin/auth/login", { email, password });
+
+        if (response.success) {
+          return handleAuthSuccess(response, rememberMe);
+        } else {
+          AuthEvents.loginFailed(email, response.message || "Login failed");
+          setError(response.message || "Login failed");
+          return { success: false, message: response.message };
+        }
+      } catch (err) {
+        const message = err.response?.data?.message || "Login failed";
+        AuthEvents.loginFailed(email, message);
+        setError(message);
+        return { success: false, message };
+      } finally {
+        setLoading(false);
+      }
+    },
+    [handleAuthSuccess]
+  );
+
+  // Login method 2: Google OAuth
+  const loginWithGoogle = useCallback(
+    async (credential) => {
+      try {
+        setError(null);
+        setLoading(true);
+
+        const response = await api.post("/admin/auth/google", { credential });
+
+        if (response.success) {
+          return handleAuthSuccess(response, true); // Google login always remembers
+        } else {
+          setError(response.message || "Google login failed");
+          return { success: false, message: response.message };
+        }
+      } catch (err) {
+        const message = err.response?.data?.message || "Google login failed";
+        setError(message);
+        return { success: false, message };
+      } finally {
+        setLoading(false);
+      }
+    },
+    [handleAuthSuccess]
+  );
+
+  // Login method 3a: Send OTP code
+  const sendLoginCode = useCallback(async (email) => {
     try {
       setError(null);
-      setLoading(true);
 
-      AuthEvents.loginAttempt(email);
-
-      const response = await api.post("/admin/auth/login", { email, password });
+      const response = await api.post("/admin/auth/send-code", { email });
 
       if (response.success) {
-        const { token, user: userData } = response;
-
-        // Store Remember Me preference in localStorage (always)
-        localStorage.setItem(STORAGE_KEYS.REMEMBER, String(rememberMe));
-
-        // Store token/user in the appropriate storage
-        const storage = rememberMe ? localStorage : sessionStorage;
-        storage.setItem(STORAGE_KEYS.TOKEN, token);
-        storage.setItem(STORAGE_KEYS.USER, JSON.stringify(userData));
-
-        api.setToken(token);
-        setUser(userData);
-
-        identifyUser(userData);
-        AuthEvents.loginSuccess(userData);
-
-        return { success: true };
+        return { success: true, message: response.message };
       } else {
-        AuthEvents.loginFailed(email, response.message || "Login failed");
-        setError(response.message || "Login failed");
-        return { success: false, message: response.message };
+        return { success: false, message: response.message || "Failed to send code" };
       }
     } catch (err) {
-      const message = err.response?.data?.message || "Login failed";
-      AuthEvents.loginFailed(email, message);
-      setError(message);
+      const message = err.response?.data?.message || "Failed to send code";
       return { success: false, message };
-    } finally {
-      setLoading(false);
     }
   }, []);
+
+  // Login method 3b: Verify OTP code
+  const loginWithCode = useCallback(
+    async (email, code) => {
+      try {
+        setError(null);
+        setLoading(true);
+
+        const response = await api.post("/admin/auth/verify-code", { email, code });
+
+        if (response.success) {
+          return handleAuthSuccess(response, true);
+        } else {
+          setError(response.message || "Invalid code");
+          return { success: false, message: response.message };
+        }
+      } catch (err) {
+        const message = err.response?.data?.message || "Invalid or expired code";
+        setError(message);
+        return { success: false, message };
+      } finally {
+        setLoading(false);
+      }
+    },
+    [handleAuthSuccess]
+  );
 
   const value = useMemo(
     () => ({
@@ -179,10 +258,13 @@ export function AuthProvider({ children }) {
       loading,
       error,
       login,
+      loginWithGoogle,
+      loginWithCode,
+      sendLoginCode,
       logout,
       isAuthenticated: !!user,
     }),
-    [user, loading, error, login, logout]
+    [user, loading, error, login, loginWithGoogle, loginWithCode, sendLoginCode, logout]
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

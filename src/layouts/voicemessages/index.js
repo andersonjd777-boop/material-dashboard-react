@@ -27,6 +27,7 @@ import MDBox from "components/MDBox";
 import MDTypography from "components/MDTypography";
 import MDButton from "components/MDButton";
 import api from "services/api";
+import logger from "services/logger";
 
 function VoiceMessages() {
   const [messages, setMessages] = useState([]);
@@ -44,7 +45,7 @@ function VoiceMessages() {
       const response = await api.getVoiceMessages({ days: daysFilter });
       setMessages(response?.messages || []);
     } catch (error) {
-      console.error("Failed to fetch voice messages:", error);
+      logger.error("Failed to fetch voice messages:", error);
     }
     setLoading(false);
   }, [daysFilter]);
@@ -54,7 +55,7 @@ function VoiceMessages() {
       const response = await api.getVoiceMessageStats();
       setStats(response?.stats || null);
     } catch (error) {
-      console.error("Failed to fetch stats:", error);
+      logger.error("Failed to fetch stats:", error);
     }
   }, []);
 
