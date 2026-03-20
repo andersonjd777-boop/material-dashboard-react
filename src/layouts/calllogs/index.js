@@ -157,6 +157,11 @@ function CallLogs() {
                           Caller ID
                         </MDTypography>
                       </MDBox>
+                      <MDBox flex="2" px={1}>
+                        <MDTypography variant="caption" fontWeight="bold" color="text">
+                          Dest. Number
+                        </MDTypography>
+                      </MDBox>
                       <MDBox flex="1.5" px={1}>
                         <MDTypography variant="caption" fontWeight="bold" color="text">
                           Booking #
@@ -193,6 +198,11 @@ function CallLogs() {
                         <MDBox flex="2" px={1}>
                           <MDTypography variant="body2" color="text">
                             {call.src || "Unknown"}
+                          </MDTypography>
+                        </MDBox>
+                        <MDBox flex="2" px={1}>
+                          <MDTypography variant="body2" color="text">
+                            {call.dst === "s" ? "Internal Route" : (call.dst || "Unknown")}
                           </MDTypography>
                         </MDBox>
                         <MDBox flex="1.5" px={1}>
